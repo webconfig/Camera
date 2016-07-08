@@ -1,0 +1,17 @@
+package google.protobuf;
+option optimize_for = SPEED;
+
+message LoginRequest {
+  required string CustomerID = 1;
+  required string Password = 2;
+}
+message LoginResponse {
+  required int32 Result = 1;
+}
+message GoodsResponse {
+  message WJ_Goods {
+    required string GoodsID = 1;
+    optional string GoodsName = 2;
+  }
+  repeated WJ_Goods result = 1;
+}
