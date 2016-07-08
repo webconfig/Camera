@@ -1,0 +1,8 @@
+package google.protobuf;
+option optimize_for = SPEED;
+
+message LoginModel {
+  required string CustomerID;
+  required string Password;
+}
+
