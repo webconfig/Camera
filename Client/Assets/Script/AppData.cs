@@ -10,10 +10,11 @@ public class AppData
     public string FilePath;
 
     #region Set
+    public string SetFileName="set.xml";
     public string SetFilePath;
     public XmlDocument Data_Set_Xml;
     public WJ_Set Set;
-    private void InitSet(string SetFileName)
+    private void InitSet()
     {
         Data_Set_Xml = new XmlDocument();
         Set = new WJ_Set();
@@ -54,14 +55,21 @@ public class AppData
     }
     #endregion
 
-    public void Init(string FilePath)
-    {
-        //Data_Submit_Xml = new XmlDocument();
-        //WJ_Photo_Submits = new List<WJ_Photo_Submit>();
-        //WJ_Record_Submits = new List<WJ_Record_Submit>();
+    #region Data
+    public XmlDocument Data_Xml;
+    public XmlNode data_photo_parent, data_record_parent;
+    public string NowDataXmlPath;
+    public Dictionary<string,WJ_Photo> Photos;
+    public List<WJ_Record> Records;
 
-        //===便利本地文件=====
-        string FilePath_Data=FilePath+"/data/";
+
+    public void InitDataFile()
+    {
+        Data_Xml = new XmlDocument();
+        Photos = new Dictionary<string, WJ_Photo>();
+        Records = new List<WJ_Record>();
+
+        string FilePath_Data = FilePath + "/data/";
         DirectoryInfo theFolder = new DirectoryInfo(FilePath_Data);
         FileInfo[] fileInfos = theFolder.GetFiles();
         if (fileInfos != null && fileInfos.Length > 0)
@@ -76,57 +84,120 @@ public class AppData
                     System.IO.File.Delete(ffs[i].FullName);
                     ffs.RemoveAt(i);
                     i--;
-
                 }
             }
         }
+        //==========最新xml========
+        NowDataXmlPath = string.Format("{0}{1}.xml", FilePath_Data, System.DateTime.Now.ToString("yyyy-MM-dd"));
+        string str;
+        if (File.Exists(NowDataXmlPath))
+        {
+            str = File.ReadAllText(NowDataXmlPath);
+            Data_Submit_Xml.LoadXml(str);
+            data_photo_parent = Data_Submit_Xml.SelectSingleNode("root/photo");
+            data_record_parent = Data_Submit_Xml.SelectSingleNode("root/record");
 
-        //===便利上传文件=====
-        
+            XmlNodeList nodes = data_photo_parent.SelectNodes("/item");
+            XmlNode node;
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                node = nodes[i];
+                WJ_Photo photo = new WJ_Photo();
+                photo.CustomerID = node.Attributes["CustomerID"].InnerText;
+                photo.WJID = node.Attributes["WJID"].InnerText;
+                photo.PhotoID = node.Attributes["PhotoID"].InnerText;
+                photo.PhotoPath = node.Attributes["PhotoPath"].InnerText;
+                photo.AtTime = node.Attributes["AtTime"].InnerText;
+                Photos.Add(photo.PhotoID,photo);
+            }
 
+            nodes = data_record_parent.SelectNodes("/item");
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                node = nodes[i];
+                WJ_Record record = new WJ_Record();
+                record.CustomerID = node.Attributes["CustomerID"].InnerText;
+                record.WJID = node.Attributes["WJID"].InnerText;
+                record.ID = node.Attributes["ID"].InnerText;
+                record.WorkSpace = node.Attributes["WorkSpace"].InnerText;
+                record.GoodsName = node.Attributes["GoodsName"].InnerText;
+
+                record.BeginTime = node.Attributes["BeginTime"].InnerText;
+                record.EndTime = node.Attributes["EndTime"].InnerText;
+                record.BgeinPhotoID = node.Attributes["BgeinPhotoID"].InnerText;
+                record.EndPhotoID = node.Attributes["EndPhotoID"].InnerText;
+                record.longitude = node.Attributes["longitude"].InnerText;
+                record.Latitude = node.Attributes["Latitude"].InnerText;
+                record.Mode = node.Attributes["Mode"].InnerText;
+                Records.Add(record);
+            }
+
+
+        }
+        else
+        {
+            str = "<root><photo></photo><record></record></root>";
+            Data_Submit_Xml.LoadXml(str);
+            data_photo_parent = Data_Submit_Xml.SelectSingleNode("root/photo");
+            data_record_parent = Data_Submit_Xml.SelectSingleNode("root/record");
+        }
+    }
+    public void AddDataItem(WJ_Photo phot, WJ_Record recode)
+    {
+       
     }
 
-    //#region Data
-    //public XmlDocument Data_Xml;
-    //public XmlNode data_photo_parent, data_record_parent;
-    //public string NowDataXml;
-    //public void InitSubmitFile()
-    //{
-    //    Data_Xml = new XmlDocument();
-    //    string FilePath_Data = FilePath + "/data/";
-    //    DirectoryInfo theFolder = new DirectoryInfo(FilePath_Data);
-    //    FileInfo[] fileInfos = theFolder.GetFiles();
-    //    if (fileInfos != null && fileInfos.Length > 0)
-    //    {
-    //        List<FileInfo> ffs = fileInfos.ToList();
-    //        ffs.Sort((s1, s2) => DateTime.Compare(s1.CreationTime, s2.CreationTime));
-    //        for (int i = 0; i < ffs.Count; i++)
-    //        {
-    //            TimeSpan ts = System.DateTime.Now.Subtract(ffs[i].CreationTime);
-    //            if (ts.Days >= 7)
-    //            {//删除7天前的数据
-    //                System.IO.File.Delete(ffs[i].FullName);
-    //                ffs.RemoveAt(i);
-    //                i--;
-    //            }
-    //        }
-    //    }
-    //    //==========最新xml========
-    //    NowDataXml =string.Format("{0}{1}.xml",FilePath_Data,System.DateTime.Now.ToString("yyyy-MM-dd"));
-    //    string str;
-    //    if (File.Exists(NowDataXml))
-    //    {
-    //        str = File.ReadAllText(NowDataXml);
-    //    }
-    //    else
-    //    {
-    //        str = "<root><photo></photo><record></record></root>";
-    //    }
-    //    Data_Submit_Xml.LoadXml(str);
-    //    data_photo_parent = Data_Submit_Xml.SelectSingleNode("root/photo");
-    //    data_record_parent = Data_Submit_Xml.SelectSingleNode("root/record");
-    //}
-    //public void AddItem(WJ_Photo_Submit phot, WJ_Record_Submit recode)
+    public void Update(WJ_Record recode)
+    {
+        XmlNode node = data_record_parent.LastChild;
+        node.Attributes["EndTime"].Value= recode.EndTime;
+        node.Attributes["EndPhotoID"].Value = recode.EndPhotoID;
+    }
+    #endregion
+
+    #region Submit
+    public XmlDocument Data_Submit_Xml;
+    public XmlNode submit_photo_parent, submit_record_parent;
+    public bool HasSubmit;
+    public List<string> SubmitDatas;
+    public string NowSubmitXml;
+    public string FilePath_Submit;
+    public void InitSubmitFile()
+    {
+        Data_Submit_Xml = new XmlDocument();
+        FilePath_Submit = FilePath + "/submit/";
+        DirectoryInfo theFolder = new DirectoryInfo(FilePath_Submit);
+        FileInfo[] fileInfos = theFolder.GetFiles();
+        if (fileInfos != null && fileInfos.Length > 0)
+        {
+            List<FileInfo> ffs = fileInfos.ToList();
+            ffs.Sort((s1, s2) => DateTime.Compare(s1.CreationTime, s2.CreationTime));
+            HasSubmit= true;
+            for (int i = 0; i < ffs.Count; i++)
+            {
+                SubmitDatas.Add(File.ReadAllText(ffs[i].FullName));
+            }
+        }
+        else
+        {
+            HasSubmit=false;
+        }
+        //==========最新xml========
+        NowSubmitXml = FilePath_Submit + "new.xml";
+        string str;
+        if (File.Exists(FilePath_Submit))
+        {
+            str = File.ReadAllText(FilePath_Submit);
+        }
+        else
+        {
+            str = "<root><photo></photo><record></record></root>";
+        }
+        Data_Submit_Xml.LoadXml(str);
+        submit_photo_parent = Data_Submit_Xml.SelectSingleNode("root/photo");
+        submit_record_parent = Data_Submit_Xml.SelectSingleNode("root/record");
+    }
+    //public void AddItem(WJ_Photo_Submit phot,WJ_Record_Submit recode)
     //{
     //    XmlElement node = Data_Submit_Xml.CreateElement("item");
     //    node.SetAttribute("CustomerID", phot.CustomerID);
@@ -152,7 +223,7 @@ public class AppData
     //    node.SetAttribute("Mode", recode.Mode);
     //    record_parent.AppendChild(node);
 
-    //    if (record_parent.ChildNodes.Count >= 20)
+    //    if(record_parent.ChildNodes.Count>=20)
     //    {//一个xml只记录20条记录
     //        Data_Submit_Xml.Save(System.DateTime.Now.Ticks.ToString() + ".xml");
     //    }
@@ -160,88 +231,37 @@ public class AppData
     //    {
     //        Data_Submit_Xml.Save(NowXml);
     //    }
-
-
-    //}
-    //#endregion
-
-    #region Submit
-    public XmlDocument Data_Submit_Xml;
-    public XmlNode photo_parent, record_parent;
-    public bool HasSubmit;
-    public List<string> SubmitDatas;
-    public string NowXml;
-    public void InitSubmitFile()
-    {
-        Data_Submit_Xml = new XmlDocument();
-        string FilePath_Submit = FilePath + "/submit/";
-        DirectoryInfo theFolder = new DirectoryInfo(FilePath_Submit);
-        FileInfo[] fileInfos = theFolder.GetFiles();
-        if (fileInfos != null && fileInfos.Length > 0)
-        {
-            List<FileInfo> ffs = fileInfos.ToList();
-            ffs.Sort((s1, s2) => DateTime.Compare(s1.CreationTime, s2.CreationTime));
-            HasSubmit= true;
-            for (int i = 0; i < ffs.Count; i++)
-            {
-                SubmitDatas.Add(File.ReadAllText(ffs[i].FullName));
-            }
-        }
-        else
-        {
-            HasSubmit=false;
-        }
-        //==========最新xml========
-        NowXml =FilePath_Submit+ "new.xml";
-        string str;
-        if (File.Exists(FilePath_Submit))
-        {
-            str = File.ReadAllText(FilePath_Submit);
-        }
-        else
-        {
-            str = "<root><photo></photo><record></record></root>";
-        }
-        Data_Submit_Xml.LoadXml(str);
-        photo_parent = Data_Submit_Xml.SelectSingleNode("root/photo");
-        record_parent = Data_Submit_Xml.SelectSingleNode("root/record");
-    }
-    public void AddItem(WJ_Photo_Submit phot,WJ_Record_Submit recode)
-    {
-        XmlElement node = Data_Submit_Xml.CreateElement("item");
-        node.SetAttribute("CustomerID", phot.CustomerID);
-        node.SetAttribute("WJID", phot.WJID);
-        node.SetAttribute("PhotoID", phot.PhotoID);
-        node.SetAttribute("PhotoPath", phot.PhotoPath);
-        node.SetAttribute("AtTime", phot.AtTime);
-        photo_parent.AppendChild(node);
-
-        node = Data_Submit_Xml.CreateElement("item");
-        node.SetAttribute("SeqID", recode.SeqID);
-        node.SetAttribute("CustomerID", recode.CustomerID);
-        node.SetAttribute("WJID", recode.WJID);
-        node.SetAttribute("ID", recode.ID);
-        node.SetAttribute("WorkSpace", recode.WorkSpace);
-        node.SetAttribute("GoodsName", recode.GoodsName);
-        node.SetAttribute("BeginTime", recode.BeginTime);
-        node.SetAttribute("EndTime", recode.EndTime);
-        node.SetAttribute("BgeinPhotoID", recode.BgeinPhotoID);
-        node.SetAttribute("EndPhotoID", recode.EndPhotoID);
-        node.SetAttribute("longitude", recode.longitude);
-        node.SetAttribute("Latitude", recode.Latitude);
-        node.SetAttribute("Mode", recode.Mode);
-        record_parent.AppendChild(node);
-
-        if(record_parent.ChildNodes.Count>=20)
-        {//一个xml只记录20条记录
-            Data_Submit_Xml.Save(System.DateTime.Now.Ticks.ToString() + ".xml");
-        }
-        else
-        {
-            Data_Submit_Xml.Save(NowXml);
-        }
         
 
+    //}
+    #endregion
+
+    #region Goods
+    public string GoodsFileName="goods.xml";
+    public string GoodsFilePath;
+    public XmlDocument Goods_Xml;
+    public List<WJ_Goods> Goods;
+    private void InitGoods()
+    {
+        Data_Set_Xml = new XmlDocument();
+        Goods = new List<WJ_Goods>();
+
+        GoodsFilePath = string.Format("{0}/{1}", Application.persistentDataPath, GoodsFileName);
+        if (File.Exists(GoodsFilePath))
+        {
+            string str = File.ReadAllText(GoodsFilePath);
+            Data_Set_Xml.LoadXml(str);
+            XmlNodeList nodes = Data_Set_Xml.SelectNodes("root/item");
+            XmlNode node;
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                node = nodes[i];
+                WJ_Goods good = new WJ_Goods();
+                good.GoodsID = node.Attributes["GoodsID"].Value;
+                good.GoodsName = node.Attributes["GoodsName"].Value;
+                Goods.Add(good);
+            }
+        }
     }
     #endregion
 
@@ -273,12 +293,4 @@ public class AppData
         Debug.Log(ts3.ToString());
     }
     #endregion
-
-    void Update()
-    {
-        if(HasSubmit)
-        {
-
-        }
-    }
 }

@@ -2,10 +2,10 @@
 
 public class WJ_Record
 {
-    public long CustomerID { get; set; }
+    public string CustomerID { get; set; }
     public string WJID { get; set; }
 
-    public long ID { get; set; }
+    public string ID { get; set; }
 
     public string WorkSpace { get; set; }
 
@@ -15,7 +15,7 @@ public class WJ_Record
 
     public string BgeinPhotoID { get; set; }
     public string EndPhotoID { get; set; }
-    public float longitude { get; set; }
-    public float Latitude { get; set; }
-    public int Mode { get; set; }
+    public string longitude { get; set; }
+    public string Latitude { get; set; }
+    public string Mode { get; set; }
 }
