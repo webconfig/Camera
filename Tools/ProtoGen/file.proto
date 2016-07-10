@@ -1,0 +1,12 @@
+package google.protobuf;
+option optimize_for = SPEED;
+
+message FileRequest {
+  required string name = 1;
+}
+message FileResponse {
+  required int64 Result = 1;
+}
+message FileSend {
+  required bytes datas = 1;
+}
