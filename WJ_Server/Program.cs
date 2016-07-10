@@ -24,7 +24,6 @@ namespace WJ_Server
 
             var bossGroup = new MultithreadEventLoopGroup(1);
             var workerGroup = new MultithreadEventLoopGroup();
-            X509Certificate2 tlsCertificate = null;
             try
             {
                 var bootstrap = new ServerBootstrap();
@@ -36,13 +35,13 @@ namespace WJ_Server
                     .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
-                        pipeline.AddLast(new LengthDecoder(1024, 0, 4, 0, 4));
+                        pipeline.AddLast(new LengthDecoder(1024*3, 0, 4, 0, 4));
                         //pipeline.AddLast(new MessageDecoder());
                         //pipeline.AddLast(new MessageEncoder());
                         pipeline.AddLast(new DataServerHandler());
                     }));
 
-                IChannel bootstrapChannel = await bootstrap.BindAsync(8007);
+                IChannel bootstrapChannel = await bootstrap.BindAsync(3333);
 
                 Console.ReadLine();
 
@@ -55,6 +54,9 @@ namespace WJ_Server
             }
         }
 
-        static void Main() => RunServerAsync().Wait();
+        static void Main()
+        {
+            RunServerAsync().Wait();
+        }
     }
 }
