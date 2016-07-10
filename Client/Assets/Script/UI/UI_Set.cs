@@ -10,7 +10,7 @@ public class UI_Set : UI_Base
     public Button Btn_OK, Btn_Back;
     public InputField Input_WJ_Code, Input_Place, Input_FTP_Server, Input_FTP_Port,
         Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password;
-    private Toggle Tog_JC,Tog_JCJS;
+    public Toggle Tog_JC, Tog_JCJS;
     private WJ_Set Set;
 
     public override void UI_Start()

@@ -180,6 +180,7 @@ public class UI_Control_Table : MonoBehaviour, IBeginDragHandler, IDragHandler, 
     {
         old_y = RowParents.localPosition.y;
         event_start_y = eventData.position.y;
+        App.Instance.NetWorkCanDo = false;
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -200,7 +201,7 @@ public class UI_Control_Table : MonoBehaviour, IBeginDragHandler, IDragHandler, 
 
     public void OnEndDrag(PointerEventData eventData)
     {
-
+        App.Instance.NetWorkCanDo = true;
         if (Rows.Count * RowHeight <= RectTran.rect.height || RowParents.localPosition.y < 0)
         {
             if (can_drag == 0)
@@ -209,6 +210,7 @@ public class UI_Control_Table : MonoBehaviour, IBeginDragHandler, IDragHandler, 
                 MoveEndPosition = 0;
                 MoveStartPosition = RowParents.localPosition.y;
                 GoToTop = true;
+                App.Instance.NetWorkCanDo = false;
                 StartMoveTime = Time.time;
             }
         }
@@ -220,6 +222,7 @@ public class UI_Control_Table : MonoBehaviour, IBeginDragHandler, IDragHandler, 
                 MoveEndPosition = RowParents.rect.height - Height;
                 MoveStartPosition = RowParents.localPosition.y;
                 GoToEnd = true;
+                App.Instance.NetWorkCanDo = false;
                 StartMoveTime = Time.time;
             }
 
@@ -233,13 +236,13 @@ public class UI_Control_Table : MonoBehaviour, IBeginDragHandler, IDragHandler, 
             if (GoToEnd)
             {
                 MT = (Time.time - StartMoveTime) / MoveTime;
-                if (MT >= 1) { MT = 1; GoToEnd = false; }
+                if (MT >= 1) { MT = 1; GoToEnd = false; App.Instance.NetWorkCanDo = true; }
                 RowParents.localPosition = new Vector3(0, Mathf.Lerp(MoveStartPosition, MoveEndPosition, MT), 0);
             }
             else if (GoToTop)
             {
                 MT = (Time.time - StartMoveTime) / MoveTime;
-                if (MT >= 1) { MT = 1; GoToTop = false; }
+                if (MT >= 1) { MT = 1; GoToTop = false; App.Instance.NetWorkCanDo = true; }
                 RowParents.localPosition = new Vector3(0, Mathf.Lerp(MoveStartPosition, MoveEndPosition, MT), 0);
             }
         }

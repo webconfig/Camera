@@ -1,21 +1,21 @@
 ﻿using SQLite4Unity3d;
-
+[System.Serializable]
 public class WJ_Record
 {
-    public string CustomerID { get; set; }
-    public string WJID { get; set; }
+    public string CustomerID;
+    public string WJID;
 
-    public string ID { get; set; }
+    public string ID;
 
-    public string WorkSpace { get; set; }
+    public string WorkSpace;
 
-    public string GoodsName { get; set; }
-    public string BeginTime { get; set; }
-    public string EndTime { get; set; }
+    public string GoodsName;
+    public string BeginTime;
+    public string EndTime;
 
-    public string BgeinPhotoID { get; set; }
-    public string EndPhotoID { get; set; }
-    public string longitude { get; set; }
-    public string Latitude { get; set; }
-    public string Mode { get; set; }
+    public string BgeinPhotoID;
+    public string EndPhotoID;
+    public string longitude;
+    public string Latitude;
+    public string Mode;
 }

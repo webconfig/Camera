@@ -52,7 +52,10 @@ public class UI_Control_Table_Item : MonoBehaviour
     private Texture2D texture;
     public void Clear()
     {
-        texture = null;
+        if (texture != null)
+        {
+            Destroy(texture);
+        }
     }
 }
 public enum TableItemType

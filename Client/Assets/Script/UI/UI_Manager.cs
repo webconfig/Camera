@@ -32,6 +32,7 @@ public class UI_Manager:MonoBehaviour
 
     public void Show(string name)
     {
+        App.Instance.NetWorkCanDo = false;
         OldCurrent = Current;
         if (Current != null)
         {
@@ -41,6 +42,7 @@ public class UI_Manager:MonoBehaviour
         UI_Datas[name].gameObject.SetActive(true);
         UI_Datas[name].UI_Start();
         Current = UI_Datas[name];
+        App.Instance.NetWorkCanDo = true;
     }
 
     public void Back()

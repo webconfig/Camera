@@ -20,16 +20,19 @@ public class UI_History : UI_Base
             data_row.Add("BeginTime", model.BeginTime);
             data_row.Add("EndTime", model.EndTime);
             data_row.Add("Mode", model.Mode == "0" ? "计次" : "计时");
-            if (string.IsNullOrEmpty(model.BgeinPhotoID))
+            if (!string.IsNullOrEmpty(model.BgeinPhotoID))
             {
-                data_row.Add("BgeinPhotoID", App.Instance.Data.Photos[model.BgeinPhotoID].PhotoMiniPath);
+                string str = App.Instance.Data.Photos[model.BgeinPhotoID].PhotoMiniPath;
+                data_row.Add("PhotoMiniPathBegin", App.Instance.Data.ImgPath + App.Instance.Data.Photos[model.BgeinPhotoID].PhotoMiniPath);
             }
-            if (string.IsNullOrEmpty(model.EndPhotoID))
+            if (!string.IsNullOrEmpty(model.EndPhotoID))
             {
-                data_row.Add("EndPhotoID", App.Instance.Data.Photos[model.EndPhotoID].PhotoMiniPath);
+                string str = App.Instance.Data.Photos[model.EndPhotoID].PhotoMiniPath;
+                data_row.Add("PhotoMiniPathEnd", App.Instance.Data.ImgPath + App.Instance.Data.Photos[model.EndPhotoID].PhotoMiniPath);
             }
             table.AddRow(data_row, null);
         }
+        table.ToEnd();
     }
 
     public override void UI_End()
