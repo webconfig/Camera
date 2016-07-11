@@ -20,14 +20,6 @@ message GoodsResponse {
   repeated WJ_Goods result = 1;
 }
 message RecordRequest {
-   message WJ_Photo_Submit{
-    required string CustomerID=1;
-    required string WJID=2;
-    required string PhotoID=3;
-    required string PhotoPath=4;
-    required string AtTime=5;
-	required string SeqID=6;
-   }
    message WJ_Record_Submit{
     required string SeqID=1;
     required string CustomerID=2;
@@ -43,9 +35,8 @@ message RecordRequest {
     required string Latitude=12;
     required string Mode=13;
    }
-  repeated WJ_Photo_Submit photos = 1;
-  repeated WJ_Record_Submit records = 2;
-  required string id = 3;
+  repeated WJ_Record_Submit records = 1;
+  required string id = 2;
 }
 message RecordResponse {
   required int32 Result = 1;

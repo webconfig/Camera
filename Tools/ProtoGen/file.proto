@@ -1,8 +1,16 @@
 package google.protobuf;
 option optimize_for = SPEED;
-
-message FileRequest {
+message FileStartRequest {
   required string name = 1;
+  required string dir = 2;
+}
+message FileRequest {
+  required string CustomerID = 1;
+  required string WJID = 2;
+  required string PhotoID = 3;
+  required string PhotoPath = 4;
+  required string AtTime = 5;
+  required string SeqID=6;
 }
 message FileResponse {
   required int64 Result = 1;

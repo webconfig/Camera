@@ -121,79 +121,20 @@ namespace google.protobuf
   {
     public RecordRequest() {}
     
-    private readonly global::System.Collections.Generic.List<google.protobuf.RecordRequest.WJ_Photo_Submit> _photos = new global::System.Collections.Generic.List<google.protobuf.RecordRequest.WJ_Photo_Submit>();
-    [global::ProtoBuf.ProtoMember(1, Name=@"photos", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public global::System.Collections.Generic.List<google.protobuf.RecordRequest.WJ_Photo_Submit> photos
-    {
-      get { return _photos; }
-    }
-  
     private readonly global::System.Collections.Generic.List<google.protobuf.RecordRequest.WJ_Record_Submit> _records = new global::System.Collections.Generic.List<google.protobuf.RecordRequest.WJ_Record_Submit>();
-    [global::ProtoBuf.ProtoMember(2, Name=@"records", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(1, Name=@"records", DataFormat = global::ProtoBuf.DataFormat.Default)]
     public global::System.Collections.Generic.List<google.protobuf.RecordRequest.WJ_Record_Submit> records
     {
       get { return _records; }
     }
   
     private string _id;
-    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"id", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"id", DataFormat = global::ProtoBuf.DataFormat.Default)]
     public string id
     {
       get { return _id; }
       set { _id = value; }
     }
-  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"WJ_Photo_Submit")]
-  public partial class WJ_Photo_Submit : global::ProtoBuf.IExtensible
-  {
-    public WJ_Photo_Submit() {}
-    
-    private string _CustomerID;
-    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"CustomerID", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public string CustomerID
-    {
-      get { return _CustomerID; }
-      set { _CustomerID = value; }
-    }
-    private string _WJID;
-    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"WJID", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public string WJID
-    {
-      get { return _WJID; }
-      set { _WJID = value; }
-    }
-    private string _PhotoID;
-    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"PhotoID", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public string PhotoID
-    {
-      get { return _PhotoID; }
-      set { _PhotoID = value; }
-    }
-    private string _PhotoPath;
-    [global::ProtoBuf.ProtoMember(4, IsRequired = true, Name=@"PhotoPath", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public string PhotoPath
-    {
-      get { return _PhotoPath; }
-      set { _PhotoPath = value; }
-    }
-    private string _AtTime;
-    [global::ProtoBuf.ProtoMember(5, IsRequired = true, Name=@"AtTime", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public string AtTime
-    {
-      get { return _AtTime; }
-      set { _AtTime = value; }
-    }
-    private string _SeqID;
-    [global::ProtoBuf.ProtoMember(6, IsRequired = true, Name=@"SeqID", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public string SeqID
-    {
-      get { return _SeqID; }
-      set { _SeqID = value; }
-    }
-    private global::ProtoBuf.IExtension extensionObject;
-    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
-      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
-  }
-  
   [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"WJ_Record_Submit")]
   public partial class WJ_Record_Submit : global::ProtoBuf.IExtensible
   {
