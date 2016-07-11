@@ -10,10 +10,10 @@
 // Generated from: file.proto
 namespace google.protobuf
 {
-  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"FileRequest")]
-  public partial class FileRequest : global::ProtoBuf.IExtensible
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"FileStartRequest")]
+  public partial class FileStartRequest : global::ProtoBuf.IExtensible
   {
-    public FileRequest() {}
+    public FileStartRequest() {}
     
     private string _name;
     [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"name", DataFormat = global::ProtoBuf.DataFormat.Default)]
@@ -21,6 +21,65 @@ namespace google.protobuf
     {
       get { return _name; }
       set { _name = value; }
+    }
+    private string _dir;
+    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"dir", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string dir
+    {
+      get { return _dir; }
+      set { _dir = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"FileRequest")]
+  public partial class FileRequest : global::ProtoBuf.IExtensible
+  {
+    public FileRequest() {}
+    
+    private string _CustomerID;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"CustomerID", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string CustomerID
+    {
+      get { return _CustomerID; }
+      set { _CustomerID = value; }
+    }
+    private string _WJID;
+    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"WJID", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string WJID
+    {
+      get { return _WJID; }
+      set { _WJID = value; }
+    }
+    private string _PhotoID;
+    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"PhotoID", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string PhotoID
+    {
+      get { return _PhotoID; }
+      set { _PhotoID = value; }
+    }
+    private string _PhotoPath;
+    [global::ProtoBuf.ProtoMember(4, IsRequired = true, Name=@"PhotoPath", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string PhotoPath
+    {
+      get { return _PhotoPath; }
+      set { _PhotoPath = value; }
+    }
+    private string _AtTime;
+    [global::ProtoBuf.ProtoMember(5, IsRequired = true, Name=@"AtTime", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string AtTime
+    {
+      get { return _AtTime; }
+      set { _AtTime = value; }
+    }
+    private string _SeqID;
+    [global::ProtoBuf.ProtoMember(6, IsRequired = true, Name=@"SeqID", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string SeqID
+    {
+      get { return _SeqID; }
+      set { _SeqID = value; }
     }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)

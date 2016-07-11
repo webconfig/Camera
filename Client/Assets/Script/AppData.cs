@@ -12,7 +12,7 @@ public class AppData
     public void Init()
     {
         Debug.Log(Application.persistentDataPath);
-        InitImageFile();
+        InitSubmitImage();
         InitSet();
         InitDataFile();
         InitSubmitFile();
@@ -176,7 +176,7 @@ public class AppData
     #region Submit
     public int LocalCount;
     public XmlDocument Data_Submit_Xml;
-    public XmlNode submit_photo_parent, submit_record_parent;
+    public XmlNode submit_record_parent;
     public Dictionary<string,RecordRequest> SubmitDatas_Olds;
     public RecordRequest SubmitDatas_New;
     public string NowSubmitXml;
@@ -222,40 +222,27 @@ public class AppData
         }
         else
         {
-            str = "<root><photo></photo><record></record></root>";
+            str = "<root></root>";
         }
         Data_Submit_Xml.LoadXml(str);
-        submit_photo_parent = Data_Submit_Xml.SelectSingleNode("root/photo");
-        submit_record_parent = Data_Submit_Xml.SelectSingleNode("root/record");
+        submit_record_parent = Data_Submit_Xml.SelectSingleNode("record");
         SetSubmitData(Data_Submit_Xml,ref SubmitDatas_New);
         SubmitDatas_New.id = "new";
         LocalCount += SubmitDatas_New.records.Count;
-        Debug.Log(SubmitDatas_New.photos.Count + "---" + SubmitDatas_New.records.Count);
+        Debug.Log(SubmitDatas_New.records.Count);
     }
     public void SetSubmitData(XmlDocument old,ref RecordRequest SubmitDatas)
     {
         XmlNode node;
-        XmlNodeList list = old.SelectNodes("root/photo/item");
-        for (int j = 0; j < list.Count; j++)
+        string str;
+        for (int j = 0; j < submit_record_parent.ChildNodes.Count; j++)
         {
-            node = list[j];
-            RecordRequest.WJ_Photo_Submit photo = new RecordRequest.WJ_Photo_Submit();
-            photo.CustomerID = node.Attributes["CustomerID"].Value;
-            photo.WJID = node.Attributes["WJID"].Value;
-            photo.PhotoID = node.Attributes["PhotoID"].Value;
-            photo.PhotoPath = node.Attributes["PhotoPath"].Value;
-            photo.AtTime = node.Attributes["AtTime"].Value;
-            SubmitDatas.photos.Add(photo);
-        }
-
-        list = old.SelectNodes("root/record/item");
-        for (int j = 0; j < list.Count; j++)
-        {
-            node = list[j];
-            RecordRequest.WJ_Record_Submit record = new RecordRequest.WJ_Record_Submit();
-            record.EndPhotoID = node.Attributes["EndPhotoID"].Value;
-            if (!string.IsNullOrEmpty(record.EndPhotoID))
+            node = submit_record_parent.ChildNodes[j];
+            str = node.Attributes["EndPhotoID"].Value;
+            if (!string.IsNullOrEmpty(str))
             {//排除还没完成二次拍照的记录
+                RecordRequest.WJ_Record_Submit record = new RecordRequest.WJ_Record_Submit();
+                record.EndPhotoID = str;
                 record.SeqID = node.Attributes["SeqID"].Value;
                 record.CustomerID = node.Attributes["CustomerID"].Value;
                 record.WJID = node.Attributes["WJID"].Value;
@@ -272,65 +259,12 @@ public class AppData
             }
         }
     }
-    private List<RecordResponse2> _SubmitRespinseData;
-    public List<RecordResponse2> SubmitRespinseData
-    {
-        get
-        {
-            if (_SubmitRespinseData == null) { _SubmitRespinseData = new List<RecordResponse2>(); }
-            return _SubmitRespinseData;
-        }
-    }
-    public void AddSubmitRespinse(RecordResponse2 data)
-    {
-        SubmitRespinseData.Add(data);
-    }
-    public void DelSubmitRespinseData()
-    {
-        if (SubmitRespinseData.Count > 0)
-        {
-            List<string> photos = new List<string>();
-            List<string> records = new List<string>();
-            for (int j = 0; j < SubmitRespinseData.Count; j++)
-            {
-                photos.AddRange(SubmitRespinseData[j].photos);
-                records.AddRange(SubmitRespinseData[j].records);
-            }
-
-            int num = submit_photo_parent.SelectNodes("item").Count;
-
-            XmlNode node;
-            for (int i = 0; i <submit_photo_parent.ChildNodes.Count; i++)
-            {
-                node = submit_photo_parent.ChildNodes[i];
-                if (photos.Contains(node.Attributes["PhotoID"].Value))
-                {
-                    submit_photo_parent.RemoveChild(node);
-                    i--;
-                }
-            }
-            for (int i = 0; i < submit_record_parent.ChildNodes.Count; i++)
-            {
-                node = submit_record_parent.ChildNodes[i];
-                if (records.Contains(node.Attributes["ID"].Value))
-                {
-                    submit_record_parent.RemoveChild(node);
-                    i--;
-                }
-            }
-
-            SubmitRespinseData.Clear();
-            App.Instance.Data.Data_Submit_Xml.Save(App.Instance.Data.NowSubmitXml);
-            SubmitDatas_New.photos.Clear();
-            SubmitDatas_New.records.Clear();
-            SetSubmitData(Data_Submit_Xml,ref SubmitDatas_New);
-            App.Instance.Data.LocalCount = SubmitDatas_New.records.Count;
-            OnValueChange();
-        }
-    }
-
     public bool Add(WJ_Photo wj_photo, System.DateTime dt, string GoodsName)
     {
+        Photos.Add(wj_photo.PhotoID, wj_photo);
+        //保存到图片上传表
+        AddSubmitItem(wj_photo, dt);
+        //保存图片到本地数据表
         XmlElement node_photo = Data_Xml.CreateElement("item");
         node_photo.SetAttribute("CustomerID", wj_photo.CustomerID);
         node_photo.SetAttribute("WJID", wj_photo.WJID);
@@ -340,41 +274,28 @@ public class AppData
         node_photo.SetAttribute("AtTime", wj_photo.AtTime);
         data_photo_parent.AppendChild(node_photo);
 
-        XmlElement node_photo_submit = Data_Submit_Xml.CreateElement("item");
-        node_photo_submit.SetAttribute("CustomerID", wj_photo.CustomerID);
-        node_photo_submit.SetAttribute("WJID", wj_photo.WJID);
-        node_photo_submit.SetAttribute("PhotoID", wj_photo.PhotoID);
-        node_photo_submit.SetAttribute("PhotoPath", wj_photo.PhotoPath);
-        node_photo_submit.SetAttribute("AtTime", wj_photo.AtTime);
-        submit_photo_parent.AppendChild(node_photo_submit);
-        Photos.Add(wj_photo.PhotoID, wj_photo);
         if (Records.Count > 0 && string.IsNullOrEmpty(Records.Last().EndPhotoID))
         {
             WJ_Record wj_record = Records.Last();
             wj_record.EndPhotoID = wj_photo.PhotoID;
             wj_record.EndTime = wj_photo.AtTime;
 
-            XmlNode node = submit_record_parent.LastChild;
+            //修改本地数据表并保存
+            XmlNode node = data_record_parent.LastChild;
             node.Attributes["EndPhotoID"].Value = wj_record.EndPhotoID;
             node.Attributes["EndTime"].Value = wj_record.EndTime;
-
-            node = data_record_parent.LastChild;
-            node.Attributes["EndPhotoID"].Value = wj_record.EndPhotoID;
-            node.Attributes["EndTime"].Value = wj_record.EndTime;
-            //===保存data
             Data_Xml.Save(App.Instance.Data.NowDataXmlPath);
 
+            //修改上传数据表
+            node = submit_record_parent.LastChild;
+            node.Attributes["EndPhotoID"].Value = wj_record.EndPhotoID;
+            node.Attributes["EndTime"].Value = wj_record.EndTime;
+
             //===保存到xml
-            if(submit_record_parent.ChildNodes.Count<1||App.Instance.Client.Events.ContainsKey("submit")&&App.Instance.Client.Events["submit"].RunState == 10)
+            if (submit_record_parent.ChildNodes.Count < 10 || App.Instance.DataServer.Events.ContainsKey("submit") && App.Instance.DataServer.Events["submit"].RunState == 1)
             {//未满10条记录，或者有网络但是正在进行网络传输，保存到当前文件
                 Data_Submit_Xml.Save(App.Instance.Data.NowSubmitXml);
-                RecordRequest.WJ_Photo_Submit photo = new RecordRequest.WJ_Photo_Submit();
-                photo.CustomerID = wj_photo.CustomerID;
-                photo.WJID = wj_photo.WJID;
-                photo.PhotoID = wj_photo.PhotoID;
-                photo.PhotoPath = wj_photo.PhotoPath;
-                photo.AtTime = wj_photo.AtTime;
-                SubmitDatas_New.photos.Add(photo);
+
                 RecordRequest.WJ_Record_Submit record = new RecordRequest.WJ_Record_Submit();
                 record.CustomerID = wj_record.CustomerID;
                 record.WJID = wj_record.WJID;
@@ -391,21 +312,19 @@ public class AppData
                 SubmitDatas_New.records.Add(record);
             }
             else
-            {//创建新文件保存文件
+            { 
+                //创建新文件
                 string file_name = System.DateTime.Now.Ticks.ToString() + ".xml";
                 Data_Submit_Xml.Save(App.Instance.Data.FilePath_Submit + file_name);
                 //===上传整个文件的数据
                 RecordRequest model = new RecordRequest();
-                XmlDocument old = new XmlDocument();
                 SetSubmitData(Data_Submit_Xml,ref model);
                 model.id = file_name;
                 SubmitDatas_Olds.Add(file_name, model);
                 //====新文件=====
-                Data_Submit_Xml.LoadXml("<root><photo></photo><record></record></root>");
-                submit_photo_parent = App.Instance.Data.Data_Submit_Xml.SelectSingleNode("root/photo");
-                submit_record_parent = App.Instance.Data.Data_Submit_Xml.SelectSingleNode("root/record");
+                Data_Submit_Xml.LoadXml("<root></root>");
+                submit_record_parent = App.Instance.Data.Data_Submit_Xml.SelectSingleNode("root");
                 Data_Submit_Xml.Save(NowSubmitXml);
-                SubmitDatas_New.photos.Clear();
                 SubmitDatas_New.records.Clear();
             }
             LocalCount += 1;
@@ -415,14 +334,6 @@ public class AppData
         }
         else
         {
-            RecordRequest.WJ_Photo_Submit photo = new RecordRequest.WJ_Photo_Submit();
-            photo.CustomerID = wj_photo.CustomerID;
-            photo.WJID = wj_photo.WJID;
-            photo.PhotoID = wj_photo.PhotoID;
-            photo.PhotoPath = wj_photo.PhotoPath;
-            photo.AtTime = wj_photo.AtTime;
-            SubmitDatas_New.photos.Add(photo);
-
             WJ_Record wj_record = new WJ_Record();
             wj_record.CustomerID = wj_photo.CustomerID;
             wj_record.WJID = wj_photo.WJID;
@@ -436,8 +347,6 @@ public class AppData
             wj_record.longitude = "";
             wj_record.Latitude = "";
             wj_record.Mode = "0";
-
-            //======保存Data======
             Records.Add(wj_record);
 
             XmlElement node_data = Data_Xml.CreateElement("item");
@@ -454,10 +363,8 @@ public class AppData
             node_data.SetAttribute("Latitude", wj_record.Latitude);
             node_data.SetAttribute("Mode", wj_record.Mode);
             data_record_parent.AppendChild(node_data);
-            //===保存到xml
+            //修改本地数据表并保存
             Data_Xml.Save(App.Instance.Data.NowDataXmlPath);
-
-            //======保存Submit======
 
             XmlElement node_data_submit = Data_Submit_Xml.CreateElement("item");
             node_data_submit.SetAttribute("SeqID", dt.Ticks.ToString());
@@ -474,11 +381,61 @@ public class AppData
             node_data_submit.SetAttribute("Latitude", wj_record.Latitude);
             node_data_submit.SetAttribute("Mode", wj_record.Mode);
             submit_record_parent.AppendChild(node_data_submit);
-            //===保存到xml
+            //修改上传数据表并保存
             Data_Submit_Xml.Save(App.Instance.Data.NowSubmitXml);
             return false;
         }
     }
+    #region 处理完成上传
+    public List<RecordResponse2> RecvDatas = new List<RecordResponse2>();
+    public void AddSubmitRespinse(RecordResponse2 data)
+    {
+        RecvDatas.Add(data);
+    }
+    /// <summary>
+    /// 处理上传的数据
+    /// </summary>
+    public void DelSubmitRespinseData()
+    {
+        if (RecvDatas.Count > 0)
+        {
+            //获取所有上传的记录
+            List<string> records = new List<string>();
+            for (int j = 0; j < RecvDatas.Count; j++)
+            {
+                records.AddRange(RecvDatas[j].records);
+            }
+            RecvDatas.Clear();
+
+            //删除掉本地xml的数据
+            XmlNode node;
+            for (int i = 0; i < submit_record_parent.ChildNodes.Count; i++)
+            {
+                node = submit_record_parent.ChildNodes[i];
+                if (records.Contains(node.Attributes["ID"].Value))
+                {
+                    submit_record_parent.RemoveChild(node);
+                    i--;
+                }
+            }
+            App.Instance.Data.Data_Submit_Xml.Save(App.Instance.Data.NowSubmitXml);
+
+            //====重新读取数据====
+            SubmitDatas_New.records.Clear();
+            SetSubmitData(Data_Submit_Xml, ref SubmitDatas_New);
+            App.Instance.Data.LocalCount = SubmitDatas_New.records.Count;
+            OnValueChange();
+        }
+        if(GoodsChange)
+        {
+            GoodsChange = false;
+            if(GoodsChangeEvent!=null)
+            {
+                GoodsChangeEvent();
+            }
+        }
+    }
+    #endregion
     #endregion
 
     #region Goods
@@ -488,6 +445,7 @@ public class AppData
     public XmlNode Goods_parent;
     public List<GoodsResponse.WJ_Goods> Goods;
     public string GoodsTimeMax = "1000-00-00 00";
+    public bool GoodsChange;
     private void InitGoods()
     {
         Goods_Xml = new XmlDocument();
@@ -527,72 +485,114 @@ public class AppData
         }
         Debug.Log("Goods Max Time:" + GoodsTimeMax);
     }
+
+    public void AddGoods(GoodsResponse response)
+    {
+        GoodsResponse.WJ_Goods goods_item;
+        for (int i = 0; i < response.result.Count; i++)
+        {
+            goods_item = response.result[i];
+            XmlElement node_photo = App.Instance.Data.Goods_Xml.CreateElement("item");
+            node_photo.SetAttribute("GoodsID", goods_item.GoodsID);
+            node_photo.SetAttribute("GoodsName", goods_item.GoodsName);
+            node_photo.SetAttribute("time", goods_item.time);
+            Goods_parent.AppendChild(node_photo);
+            Goods.Add(goods_item);
+            if (String.Compare(goods_item.time, GoodsTimeMax) > 0)
+            {
+                GoodsTimeMax = goods_item.time;
+            }
+        }
+        Goods_Xml.Save(GoodsFilePath);
+    }
+
     #endregion
 
     #region 图片
     public string ImgPath;
-    public List<string> UpLoadFiles;
-    public void InitImageFile()
+    public string SubmitImageFileName = "image.xml";
+    public string SubmitImageFilePath;
+    public XmlDocument SubmitImage_Xml;
+    public XmlNode SubmitImage_Parent;
+    public Dictionary<string,FileRequest> FileRequestDatas;
+    private void InitSubmitImage()
     {
-        UpLoadFiles = new List<string>();
         ImgPath = Application.persistentDataPath + "/img/";
-        if (!System.IO.Directory.Exists(ImgPath))
+        SubmitImage_Xml = new XmlDocument();
+        FileRequestDatas = new Dictionary<string,FileRequest>();
+
+        SubmitImageFilePath = string.Format("{0}/{1}", Application.persistentDataPath, SubmitImageFileName);
+        if (File.Exists(SubmitImageFileName))
         {
-            System.IO.Directory.CreateDirectory(ImgPath);
-            return;
+            string str = File.ReadAllText(SubmitImageFileName);
+            SubmitImage_Xml.LoadXml(str);
+            SubmitImage_Parent = SubmitImage_Xml.SelectSingleNode("root");
+            XmlNode node;
+            for (int i = 0; i < SubmitImage_Parent.ChildNodes.Count; i++)
+            {
+                node = SubmitImage_Parent.ChildNodes[i];
+                FileRequest item = new FileRequest();
+                item.CustomerID = node.Attributes["CustomerID"].Value;
+                item.WJID = node.Attributes["WJID"].Value;
+                item.PhotoID = node.Attributes["PhotoID"].Value;
+                item.PhotoPath = node.Attributes["PhotoPath"].Value;
+                item.AtTime = node.Attributes["AtTime"].Value;
+                item.SeqID = node.Attributes["SeqID"].Value;
+                FileRequestDatas.Add(item.SeqID, item);
+            }
         }
         else
         {
-            GetLoadFiles();
+            SubmitImage_Xml.LoadXml("<root></root>");
+            SubmitImage_Parent = SubmitImage_Xml.SelectSingleNode("root");
         }
     }
-    private void GetLoadFiles()
+
+    /// <summary>
+    /// 新加一个上传的图片
+    /// </summary>
+    /// <param name="wj_photo"></param>
+    /// <param name="dt"></param>
+    private void AddSubmitItem(WJ_Photo wj_photo,System.DateTime dt)
     {
-        DirectoryInfo theFolder = new DirectoryInfo(ImgPath);
-        FileInfo[] fileInfos = theFolder.GetFiles();
-        if (fileInfos != null && fileInfos.Length > 0)
+        XmlElement node_photo_submit = SubmitImage_Xml.CreateElement("item");
+        node_photo_submit.SetAttribute("CustomerID", wj_photo.CustomerID);
+        node_photo_submit.SetAttribute("WJID", wj_photo.WJID);
+        node_photo_submit.SetAttribute("PhotoID", wj_photo.PhotoID);
+        node_photo_submit.SetAttribute("PhotoPath", wj_photo.PhotoPath);
+        node_photo_submit.SetAttribute("AtTime", wj_photo.AtTime);
+        node_photo_submit.SetAttribute("SeqID", dt.Ticks.ToString());
+        SubmitImage_Parent.AppendChild(node_photo_submit);
+        SubmitImage_Xml.Save(SubmitImageFilePath);
+
+        FileRequest photo = new FileRequest();
+        photo.CustomerID = wj_photo.CustomerID;
+        photo.WJID = wj_photo.WJID;
+        photo.PhotoID = wj_photo.PhotoID;
+        photo.PhotoPath = wj_photo.PhotoPath;
+        photo.AtTime = wj_photo.AtTime;
+        FileRequestDatas.Add(dt.Ticks.ToString(), photo);
+    }
+
+    public void DelectSubmitItem(FileRequest item)
+    {
+        FileRequestDatas.Remove(item.SeqID);
+        File.Delete(App.Instance.Data.ImgPath + item.PhotoPath);//删除本地的大图，保留小图
+        XmlNode node;
+        for (int i = 0; i < SubmitImage_Parent.ChildNodes.Count; i++)
         {
-            List<FileInfo> ffs = fileInfos.ToList();
-            ffs.Sort((s1, s2) => DateTime.Compare(s1.CreationTime, s2.CreationTime));
-            for (int i = 0; i < ffs.Count; i++)
+            node = SubmitImage_Parent.ChildNodes[i];
+            if (String.Compare(node.Attributes["ID"].Value, item.SeqID)==0)
             {
-                if(ffs[i].Name[0]=='s')
-                { continue; }
-                UpLoadFiles.Add(ffs[i].Name);
+                submit_record_parent.RemoveChild(node);
+                break;
             }
         }
+        SubmitImage_Xml.Save(SubmitImageFilePath);
     }
     #endregion
 
-    #region 测试
-    public static XmlDocument xmlDoc;
-    public static void XmlInit()
-    {
-        xmlDoc = new XmlDocument();
-        xmlDoc.LoadXml("<bookshop></bookshop>");
-        XmlNode root = xmlDoc.SelectSingleNode("bookshop");
-        for (int i = 0; i < 500; i++)
-        {
-            XmlElement xe1 = xmlDoc.CreateElement("book");
-            for (int j = 0; j < 20; j++)
-            {
-                xe1.SetAttribute("k" + j, "1111111");
-            }
-            root.AppendChild(xe1);
-        }
-       
-    }
-    public static  void XmlTest()
-    {
-        string file = string.Format("{0}/{1}", Application.persistentDataPath, "1.xml");
-        TimeSpan ts1 = new TimeSpan(System.DateTime.Now.Ticks);
-        xmlDoc.Save(file);
-        TimeSpan ts2 = new TimeSpan(System.DateTime.Now.Ticks);
-        TimeSpan ts3 = ts1.Subtract(ts2).Duration();
-        Debug.Log(ts3.ToString());
-    }
-    #endregion
-
+    public event CallBack GoodsChangeEvent;
     public event CallBack<int> ValueChange;
     public void ClearValueChange()
     {

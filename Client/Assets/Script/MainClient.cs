@@ -121,7 +121,7 @@ public class MainClient
         {
             if(App.Instance.Data.SubmitDatas_New.records.Count>0)
             {
-                Debug.Log("========RequestRecord2222=======:" + App.Instance.Data.SubmitDatas_New.records.Count + ":" + App.Instance.Data.SubmitDatas_New.photos.Count);
+                Debug.Log("========RequestRecord2222=======:" + App.Instance.Data.SubmitDatas_New.records.Count);
                 Events["submit"].RunState = 1;
                 Send<RecordRequest>(4, App.Instance.Data.SubmitDatas_New);
             }
@@ -202,7 +202,7 @@ public class MainClient
                 GoodsResponse GoodsResponseModel;
                 RecvData<GoodsResponse>(DataByte, out GoodsResponseModel);
                 Debug.Log("===Goods返回结果:" + GoodsResponseModel.result.Count);
-                AddGoods(GoodsResponseModel);
+                App.Instance.Data.AddGoods(GoodsResponseModel);
                 break;
             case 3://返回Record
                 Events["submit"].RunState = 2;
@@ -239,27 +239,6 @@ public class MainClient
             Debug.Log("Recv Error");
         }
     }
-
-    public void AddGoods(GoodsResponse response)
-    {
-        GoodsResponse.WJ_Goods goods_item;
-        for (int i = 0; i < response.result.Count; i++)
-        {
-            goods_item = response.result[i];
-            XmlElement node_photo = App.Instance.Data.Goods_Xml.CreateElement("item");
-            node_photo.SetAttribute("GoodsID", goods_item.GoodsID);
-            node_photo.SetAttribute("GoodsName", goods_item.GoodsName);
-            node_photo.SetAttribute("time", goods_item.time);
-            App.Instance.Data.Goods_parent.AppendChild(node_photo);
-            App.Instance.Data.Goods.Add(goods_item);
-            if (String.Compare(goods_item.time, App.Instance.Data.GoodsTimeMax) > 0)
-            {
-                App.Instance.Data.GoodsTimeMax = goods_item.time;
-            }
-        }
-        App.Instance.Data.Goods_Xml.Save(App.Instance.Data.GoodsFilePath);
-    }
-
 
     #region 退出
     public  void OnApplicationQuit()

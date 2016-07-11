@@ -5,9 +5,6 @@ using System.Linq;
 using System.Xml;
 using UnityEngine;
 using UnityEngine.UI;
-/// <summary>
-/// 登录
-/// </summary>
 public class UI_Camera : UI_Base
 {
     public RawImage obj;
@@ -19,42 +16,39 @@ public class UI_Camera : UI_Base
     public Text Txt_WJ_Code, Txt_Goods, Txt_Send, Txt_Time,Txt_Total;
     public Dropdown DL_Goods;
     public RawImage Img_Camera;
+
     public override void UI_Start()
     {
-        //obj.SetActive(true);
-        //obj_Mat = obj.GetComponent<Image>().material;
         StartCoroutine(WebCamRun());
-
         Btn_Capture.onClick.AddListener(Btn_Capture_Click);
         Btn_Look.onClick.AddListener(Btn_Look_Click);
         Btn_Close.onClick.AddListener(Btn_Close_Click);
         Btn_Set.onClick.AddListener(Btn_Set_Click);
         App.Instance.Data.ValueChange += Data_ValueChange;
-
+        App.Instance.Data.GoodsChangeEvent += Data_GoodsChangeEvent;
         Txt_Send.text = string.Format("已上传{1}车，总共{0}车", App.Instance.Data.Total, App.Instance.Data.Total-App.Instance.Data.LocalCount);
         Txt_WJ_Code.text = string.Format("挖机号：{0}", App.Instance.Data.Set.WJ_Code);
-
-        DL_Goods.options.Clear();
+        Data_GoodsChangeEvent();
+    }
+    void Data_GoodsChangeEvent()
+    {
         DL_Goods.onValueChanged.RemoveAllListeners();
-        DL_Goods.onValueChanged.AddListener(GoodsSelect);
-
-        for (int i = 0; i <App.Instance.Data.Goods.Count; i++)
+        DL_Goods.options.Clear();
+        string goods_save = UnityEngine.PlayerPrefs.GetString("goods_set");
+        int goods_value = 0;
+        for (int i = 0; i < App.Instance.Data.Goods.Count; i++)
         {
             Dropdown.OptionData od = new Dropdown.OptionData();
             od.text = App.Instance.Data.Goods[i].GoodsName;
+            if(od.text==goods_save)
+            {
+                goods_value = i;
+            }
             DL_Goods.options.Add(od);
         }
-        int value = UnityEngine.PlayerPrefs.GetInt("WJ_Goods_ID");
-        if (value >= 0 && value < DL_Goods.options.Count)
-        {
-            DL_Goods.value = value;
-        }
-        else
-        {
-            DL_Goods.value = 0;
-        }
+        DL_Goods.onValueChanged.AddListener(GoodsSelect);
+        DL_Goods.value = goods_value;
     }
-
     void Data_ValueChange(int t)
     {
         Txt_Send.text = string.Format("已上传{1}车，总共{0}车", App.Instance.Data.Total, t);
@@ -66,15 +60,14 @@ public class UI_Camera : UI_Base
         Btn_Close.onClick.RemoveAllListeners();
         Btn_Set.onClick.RemoveAllListeners();
         App.Instance.Data.ValueChange -= Data_ValueChange;
+        App.Instance.Data.GoodsChangeEvent -= Data_GoodsChangeEvent;
 
         if (isPlay)
         {
             isPlay = false;
             cameraTexture.Stop();
         }
-        //obj.SetActive(false);
     }
-
     public void Btn_Capture_Click()
     {
         if (isPlay)
@@ -128,12 +121,22 @@ public class UI_Camera : UI_Base
         {
             Destroy(Img_Camera.texture);
         }
-        Texture2D snap = new Texture2D(cameraTexture.width, cameraTexture.height);
-        //snap.SetPixels(cameraTexture.GetPixels());
-        Color32[] cSource = cameraTexture.GetPixels32();
-        Color32[] cRes = new Color32[cSource.Length];
+        //新建一个model
+        System.DateTime dt = System.DateTime.Now;
+        WJ_Photo wj_photo = new WJ_Photo();
+        wj_photo.CustomerID = App.Instance.Data.Set.CustomerID;
+        wj_photo.WJID = App.Instance.Data.Set.WJ_Code;
+        wj_photo.PhotoID = string.Format("{0}_{1}_{2}", App.Instance.Data.Set.CustomerID, App.Instance.Data.Set.WJ_Code, System.DateTime.Now.ToString("yyMMddHHmmss"));
+        wj_photo.PhotoPath = wj_photo.PhotoID + ".jpg";
+        wj_photo.PhotoMiniPath = string.Format("{0}{1}{2}", "s_", wj_photo.PhotoID, ".jpg");
+        wj_photo.AtTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
+
+        //图片翻转180度
         int width = cameraTexture.width;
         int height = cameraTexture.height;
+        Texture2D snap = new Texture2D(width, height);
+        Color[] cSource = cameraTexture.GetPixels();
+        Color[] cRes = new Color[cSource.Length];
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -141,23 +144,16 @@ public class UI_Camera : UI_Base
                 cRes[((width - x - 1) * height) + height - y - 1] = cSource[(x * height) + y];
             }
         }
-        snap.SetPixels32(cRes);
+        snap.SetPixels(cRes);
         snap.Apply();
-
+        //===生成大图
         byte[] pngData = snap.EncodeToJPG(30);
-        System.DateTime dt = System.DateTime.Now;
-        WJ_Photo wj_photo = new WJ_Photo();
-        wj_photo.CustomerID = App.Instance.Data.Set.CustomerID;
-        wj_photo.WJID = App.Instance.Data.Set.WJ_Code;
-        wj_photo.PhotoID = string.Format("{0}_{1}_{2}", App.Instance.Data.Set.CustomerID, App.Instance.Data.Set.WJ_Code, System.DateTime.Now.ToString("yyMMddHHmmss"));
-        wj_photo.PhotoPath = wj_photo.PhotoID + ".jpg";
-        wj_photo.PhotoMiniPath =string.Format("{0}{1}{2}","s_",wj_photo.PhotoID,".jpg");
-        wj_photo.AtTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
-
         File.WriteAllBytes(App.Instance.Data.ImgPath + wj_photo.PhotoPath, pngData);
+        //===生成缩略图
         TextureScale.Bilinear(snap, 100, 100);
         pngData = snap.EncodeToJPG(20);
         File.WriteAllBytes(App.Instance.Data.ImgPath + wj_photo.PhotoMiniPath, pngData);
+        //===修改xml
         if (App.Instance.Data.Add(wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
         {
             Txt_Total.text = App.Instance.Data.Total.ToString();
@@ -174,32 +170,11 @@ public class UI_Camera : UI_Base
         TipsManager.Instance.RunItem("添加成功！");
         cameraTexture.Play();
         isPlay = true;
-        App.Instance.Data.UpLoadFiles.Add(wj_photo.PhotoPath);
         App.Instance.NetWorkCanDo = true;
     }
-
     private void GoodsSelect(int value)
     {
-        PlayerPrefs.SetInt("WJ_Goods_ID", value);
-    }
-    public static Texture2D Rotate180(Texture2D source)
-    {
-        Texture2D result = new Texture2D(source.height, source.width);
-        Color32[] cSource = source.GetPixels32();
-        Color32[] cRes = new Color32[cSource.Length];
-
-        for (int x = 0; x < source.width; x++)
-        {
-            for (int y = 0; y < source.height; y++)
-            {
-                cRes[((source.width - x - 1) * source.height) + source.height - y - 1] = cSource[(x * source.height) + y];
-            }
-        }
-
-        result.SetPixels32(cRes);
-        result.Apply();
-        return result;
-
+        PlayerPrefs.SetString("goods_set", DL_Goods.options[DL_Goods.value].text);
     }
 }
 

@@ -17,8 +17,8 @@ public class App : MonoBehaviour
         }
     }
     public AppData Data;
-    public MainClient Client;
-    public FileClient FileClient;
+    public MainClient DataServer;
+    public FileClient FileServer;
     private float StartTimeNet=0, CdNet = 2;
     public int NetCanRun=1;
     public bool NetWorkCanDo
@@ -41,21 +41,21 @@ public class App : MonoBehaviour
         _instance = this;
         Data = new AppData();
         Data.Init();
-        Client = new MainClient();
-        Client.Init();
+        DataServer = new MainClient();
+        DataServer.Init();
     }
     void Start()
     {
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         NetCanRun = 1;
         UI_Manager.Instance.Show("UI_Camera");
-        FileClient = new FileClient();
-        FileClient.Init();
+        FileServer = new FileClient();
+        FileServer.Init();
     }
 
     void Update()
     {
-        Client.Update();
+        DataServer.Update();
         Data.DelSubmitRespinseData();
         if(NetCanRun==2)
         {
@@ -68,17 +68,19 @@ public class App : MonoBehaviour
 
     void LateUpdate()
     {
-        FileClient.Update();
+        FileServer.Update();
     }
 
     #region 退出
     void OnApplicationQuit()
     {
-        Client.OnApplicationQuit();
+        FileServer.OnApplicationQuit();
+        DataServer.OnApplicationQuit();
     }
     void OnDestroy()
     {
-        Client.OnDestroy();
+        FileServer.OnDestroy();
+        DataServer.OnDestroy();
     }
     #endregion
 }

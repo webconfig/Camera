@@ -8,6 +8,8 @@ using System;
 using google.protobuf;
 using System.Xml;
 using System.Collections.Generic;
+using System.Linq; 
+
 [System.Serializable]
 public class FileClient
 {
@@ -20,7 +22,7 @@ public class FileClient
     public ClientStat State = ClientStat.None;
     public Dictionary<string, ClientEvent> Events;
     private ClientEvent eventitem;
-    public string CurrentFile;
+    public FileRequest CurrentFile;
     private System.IO.FileStream fs;
     private long lStartPos;
     private static int BLOCK_SIZE = 1024*2;
@@ -100,8 +102,8 @@ public class FileClient
                 eventitem.RunState = 0;
             }
             else if (eventitem.RunState == 2)
-            {
-                fs = System.IO.File.OpenRead(App.Instance.Data.ImgPath+CurrentFile);
+            {//开始开始传输文件命令
+                fs = System.IO.File.OpenRead(App.Instance.Data.ImgPath+CurrentFile.PhotoPath);
                 fs.Seek(lStartPos, SeekOrigin.Current);
                 int iBytes = 0;
                 if ((iBytes = fs.Read(buffer, 0, buffer.Length)) > 0)
@@ -113,7 +115,7 @@ public class FileClient
                 eventitem.RunState = 3;
             }
             else if(eventitem.RunState==3)
-            {
+            {//上传文件中
                 int iBytes = 0;
                 if ((iBytes = fs.Read(buffer, 0, buffer.Length)) > 0)
                 {
@@ -123,14 +125,13 @@ public class FileClient
                 }
                 else
                 {//完成
-                    FileSend send_data = new FileSend();
-                    send_data.datas = null;
-                    Send<FileSend>(2, send_data);
-                    CloseFile();
-                    App.Instance.Data.UpLoadFiles.Remove(CurrentFile);
-                    File.Delete(App.Instance.Data.ImgPath + CurrentFile);
-                    Debug.Log("完成========：" + CurrentFile);
+                    Send<FileRequest>(3, CurrentFile);
                 }
+            }
+            else if(eventitem.RunState==4)
+            {//确认上传完成
+                CloseFile();//关闭文件
+                App.Instance.Data.DelectSubmitItem(CurrentFile);//更新xml信息
             }
         }
     }
@@ -160,13 +161,14 @@ public class FileClient
     }
     public void SelectFile()
     {
-        if (App.Instance.Data.UpLoadFiles.Count > 0)
+        if (App.Instance.Data.FileRequestDatas.Count > 0)
         {
             Events["file"].RunState = 1;
-            CurrentFile = App.Instance.Data.UpLoadFiles[0];
-            FileRequest FileRequestModel = new FileRequest();
-            FileRequestModel.name = CurrentFile;
-            Send<FileRequest>(1, FileRequestModel);
+            CurrentFile = App.Instance.Data.FileRequestDatas.Values.First();
+            FileStartRequest request = new FileStartRequest();
+            request.name = CurrentFile.PhotoPath;
+            request.dir = App.Instance.Data.Set.CustomerID;
+            Send<FileStartRequest>(1, request);
             Debug.Log("开始发送：" + CurrentFile);
         }
     }
@@ -196,13 +198,17 @@ public class FileClient
 
         switch (tp)
         {
-            case 1://登陆返回结果
+            case 1://开始发送文件
                 FileResponse ResponseModel;
                 RecvData<FileResponse>(DataByte, out ResponseModel);
                 Debug.Log("===File返回结果:" + ResponseModel.Result);
                 lStartPos = ResponseModel.Result;
                 Events["file"].RunState = 2;
                 break;
+            case 2://确认接受完成
+                Events["file"].RunState = 4;
+                break;
+
         }
         try
         {
@@ -218,11 +224,11 @@ public class FileClient
     
 
     #region 退出
-    void OnApplicationQuit()
+    public  void OnApplicationQuit()
     {
         client.Close();
     }
-    void OnDestroy()
+    public void OnDestroy()
     {
         client.Close();
     }
