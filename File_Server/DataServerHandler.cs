@@ -32,16 +32,22 @@ public class DataServerHandler : ChannelHandlerAdapter
         byte[] lenByte = new byte[4];
         System.Array.Copy(data, lenByte, 4);
         int tp = BytesToInt(lenByte, 0);
-        switch(tp)
+        switch (tp)
         {
-            case 1://访问文件
-                Console.WriteLine("=========访问文件=============");
-                FileRequest request_file;
-                RecvData<FileRequest>(data, out request_file);
-                FileResponse respinse_file=new FileResponse();
-                request_file.name = FilePath + request_file.name;
+            case 1://开始上传
+                FileStartRequest request_file;
+                RecvData<FileStartRequest>(data, out request_file);
 
-                //打开上次下载的文件或新建文件
+                //判断文件夹是否存在
+                string localpath = FilePath + request_file.dir;
+                if (System.IO.Directory.Exists(localpath))
+                {
+                    System.IO.Directory.CreateDirectory(localpath);
+                }
+
+                FileResponse respinse_file = new FileResponse();
+                request_file.name = localpath + request_file.name;
+                //打开上次的文件或新建文件
                 if (System.IO.File.Exists(request_file.name))
                 {
                     fs = System.IO.File.OpenWrite(request_file.name);
@@ -55,21 +61,26 @@ public class DataServerHandler : ChannelHandlerAdapter
                 }
                 StartWrite = true;
                 Send<FileResponse>(1, respinse_file, context);
+                Console.WriteLine("=========开始上传文件=============：" + fs.Name);
                 break;
-            case 2://获取Goods
+            case 2://上传中
                 if (!StartWrite) { return; }
                 FileSend send_data;
                 RecvData<FileSend>(data, out send_data);
-                if (send_data.datas!=null&&send_data.datas.Length > 0)
-                {
-                    fs.Write(send_data.datas, 0, send_data.datas.Length);
-                }
-                else
-                {
-                    Console.WriteLine("=========传输完成=============："+fs.Name);
-                    StartWrite = false;
-                    fs.Close();
-                }
+                fs.Write(send_data.datas, 0, send_data.datas.Length);
+                break;
+            case 3://完成
+                FileRequest request_over;
+                RecvData<FileRequest>(data, out request_over);
+                StartWrite = false;
+                fs.Close();
+                //=====写入数据库=====
+
+                //====================
+                FileResponse response_over = new FileResponse();
+                response_over.Result = 1;
+                Send<FileResponse>(1, response_over, context);
+                Console.WriteLine("=========传输完成=============：" + fs.Name);
                 break;
         }
     }

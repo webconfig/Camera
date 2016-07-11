@@ -36,8 +36,6 @@ namespace WJ_Server
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
                         pipeline.AddLast(new LengthDecoder(1024*3, 0, 4, 0, 4));
-                        //pipeline.AddLast(new MessageDecoder());
-                        //pipeline.AddLast(new MessageEncoder());
                         pipeline.AddLast(new DataServerHandler());
                     }));
 
