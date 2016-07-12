@@ -115,7 +115,7 @@ public class MainClient
             Debug.Log("========RequestRecord=======:" + App.Instance.Data.SubmitDatas[0].RequestDatas.records.Count);
             RecordRequest data = App.Instance.Data.SubmitDatas[0].RequestDatas;
             Events["submit"].RunState = 1;
-            Send<RecordRequest>(3, data);
+            Send<RecordRequest>(4, data);
         }
         else
         {
@@ -161,7 +161,6 @@ public class MainClient
             }
         }
     }
-
 
     /// <summary>
     /// 接受数据
