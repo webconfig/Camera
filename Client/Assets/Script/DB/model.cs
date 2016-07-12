@@ -128,13 +128,6 @@ namespace google.protobuf
       get { return _records; }
     }
   
-    private string _id;
-    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"id", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public string id
-    {
-      get { return _id; }
-      set { _id = value; }
-    }
   [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"WJ_Record_Submit")]
   public partial class WJ_Record_Submit : global::ProtoBuf.IExtensible
   {
@@ -246,44 +239,6 @@ namespace google.protobuf
   {
     public RecordResponse() {}
     
-    private int _Result;
-    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"Result", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public int Result
-    {
-      get { return _Result; }
-      set { _Result = value; }
-    }
-    private string _id;
-    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"id", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public string id
-    {
-      get { return _id; }
-      set { _id = value; }
-    }
-    private global::ProtoBuf.IExtension extensionObject;
-    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
-      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
-  }
-  
-  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"RecordResponse2")]
-  public partial class RecordResponse2 : global::ProtoBuf.IExtensible
-  {
-    public RecordResponse2() {}
-    
-    private int _Result;
-    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"Result", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public int Result
-    {
-      get { return _Result; }
-      set { _Result = value; }
-    }
-    private readonly global::System.Collections.Generic.List<string> _photos = new global::System.Collections.Generic.List<string>();
-    [global::ProtoBuf.ProtoMember(2, Name=@"photos", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public global::System.Collections.Generic.List<string> photos
-    {
-      get { return _photos; }
-    }
-  
     private readonly global::System.Collections.Generic.List<string> _records = new global::System.Collections.Generic.List<string>();
     [global::ProtoBuf.ProtoMember(3, Name=@"records", DataFormat = global::ProtoBuf.DataFormat.Default)]
     public global::System.Collections.Generic.List<string> records

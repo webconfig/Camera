@@ -110,20 +110,20 @@ public class MainClient
     /// </summary>
     public void RequestRecord()
     {
-        if (App.Instance.Data.SubmitDatas_Olds != null && App.Instance.Data.SubmitDatas_Olds.Count > 0)
+        if (App.Instance.Data.SubmitDatas.Count > 0)
         {
-            Debug.Log("========RequestRecord=======:" + App.Instance.Data.SubmitDatas_Olds);
-            RecordRequest data=App.Instance.Data.SubmitDatas_Olds.Values.First();
+            Debug.Log("========RequestRecord=======:" + App.Instance.Data.SubmitDatas[0].RequestDatas.records.Count);
+            RecordRequest data = App.Instance.Data.SubmitDatas[0].RequestDatas;
             Events["submit"].RunState = 1;
             Send<RecordRequest>(3, data);
         }
         else
         {
-            if(App.Instance.Data.SubmitDatas_New.records.Count>0)
+            if(App.Instance.Data.SubmitDataNew.RequestDatas.records.Count>0)
             {
-                Debug.Log("========RequestRecord2222=======:" + App.Instance.Data.SubmitDatas_New.records.Count);
+                Debug.Log("========RequestRecord2222=======:" + App.Instance.Data.SubmitDataNew.RequestDatas.records.Count);
                 Events["submit"].RunState = 1;
-                Send<RecordRequest>(4, App.Instance.Data.SubmitDatas_New);
+                Send<RecordRequest>(4, App.Instance.Data.SubmitDataNew.RequestDatas);
             }
         }
     }
@@ -193,7 +193,7 @@ public class MainClient
                 LoginResponse ResponseModel;
                 RecvData<LoginResponse>(DataByte, out ResponseModel);
                 Debug.Log("===登陆返回结果:" + ResponseModel.Result);
-                if (ResponseModel.Result==1)
+                if (ResponseModel.Result == 1)
                 {
                     State = ClientStat.LoingOk;
                 }
@@ -208,26 +208,8 @@ public class MainClient
                 Events["submit"].RunState = 2;
                 RecordResponse RecordResponseModel;
                 RecvData<RecordResponse>(DataByte, out RecordResponseModel);
-                Debug.Log("===Record返回结果:" + RecordResponseModel.Result);
-                if (RecordResponseModel.Result == 1)
-                {
-                    if(App.Instance.Data.SubmitDatas_Olds.ContainsKey(RecordResponseModel.id))
-                    {
-                        System.IO.File.Delete(App.Instance.Data.FilePath_Submit + RecordResponseModel.id + ".xml");
-                        App.Instance.Data.LocalCount -= App.Instance.Data.SubmitDatas_Olds[RecordResponseModel.id].records.Count;//统计
-                        App.Instance.Data.SubmitDatas_Olds.Remove(RecordResponseModel.id);
-                    }
-                }
-                break;
-            case 4://返回Record2
-                Events["submit"].RunState = 2;
-                RecordResponse2 RecordResponseModel2;
-                RecvData<RecordResponse2>(DataByte, out RecordResponseModel2);
-                Debug.Log("===Record返回结果:" + RecordResponseModel2.Result);
-                if (RecordResponseModel2.Result > 0)
-                {
-                    App.Instance.Data.AddSubmitRespinse(RecordResponseModel2);
-                }
+                Debug.Log("===Record返回结果:" + RecordResponseModel.records.Count);
+                App.Instance.Data.AddSubmitRespinse(RecordResponseModel);
                 break;
         }
         try

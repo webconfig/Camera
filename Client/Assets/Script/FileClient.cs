@@ -135,7 +135,6 @@ public class FileClient
             }
         }
     }
-    int k = 0;
     public void CloseFile()
     {
         if (fs != null)
@@ -159,12 +158,39 @@ public class FileClient
         act.StartTime = Time.time;
         Events.Add("file", act);
     }
+
+    /// <summary>
+    /// 查找一个上传的图片
+    /// </summary>
     public void SelectFile()
     {
-        if (App.Instance.Data.FileRequestDatas.Count > 0)
+        ImgXmlData NowImgXml = null;
+        CurrentFile = null;
+        if(App.Instance.Data.UpLoadImgXmls.Count>0)
+        {
+            NowImgXml = App.Instance.Data.UpLoadImgXmls[0];
+            if (NowImgXml.FileRequestDatas.Count > 0)
+            {
+                File.Delete(NowImgXml.XmlPath);
+                App.Instance.Data.UpLoadImgXmls.RemoveAt(0);
+            }
+            else
+            {
+                CurrentFile = NowImgXml.FileRequestDatas.Values.First();
+            }
+        }
+        else
+        {
+            NowImgXml = App.Instance.Data.NowImgXml;
+            if(NowImgXml.FileRequestDatas.Count>0)
+            {
+                CurrentFile = NowImgXml.FileRequestDatas.Values.First();
+            }
+        }
+
+        if(CurrentFile!=null)
         {
             Events["file"].RunState = 1;
-            CurrentFile = App.Instance.Data.FileRequestDatas.Values.First();
             FileStartRequest request = new FileStartRequest();
             request.name = CurrentFile.PhotoPath;
             request.dir = App.Instance.Data.Set.CustomerID;

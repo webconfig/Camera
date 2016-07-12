@@ -56,7 +56,7 @@ public class App : MonoBehaviour
     void Update()
     {
         DataServer.Update();
-        Data.DelSubmitRespinseData();
+        Data.DelData();
         if(NetCanRun==2)
         {
             if(Time.time-StartTimeNet>CdNet)
