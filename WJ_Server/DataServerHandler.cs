@@ -62,30 +62,25 @@ public class DataServerHandler : ChannelHandlerAdapter
                 }
                 Send<GoodsResponse>(2, response_goods, context);
                 break;
-            case 3:
+            //case 3:
+            //    RecordRequest request_record;
+            //    RecvData<RecordRequest>(data, out request_record);
+            //    Console.WriteLine("=========获取Record=============:" + request_record.photos.Count + ":" + request_record.records.Count);
+            //    RecordResponse response_record = new RecordResponse();
+            //    response_record.Result = 1;
+            //    response_record.id = request_record.id;
+            //    Send<RecordResponse>(3, response_record, context);
+            //    break;
+            case 4:
                 RecordRequest request_record;
                 RecvData<RecordRequest>(data, out request_record);
-                Console.WriteLine("=========获取Record=============:" + request_record.photos.Count + ":" + request_record.records.Count);
+                Console.WriteLine("=========获取Record=============:" + request_record.records.Count);
                 RecordResponse response_record = new RecordResponse();
-                response_record.Result = 1;
-                response_record.id = request_record.id;
+                for (int i = 0; i < request_record.records.Count; i++)
+                {
+                    response_record.records.Add(request_record.records[i].SeqID);
+                }
                 Send<RecordResponse>(3, response_record, context);
-                break;
-            case 4:
-                RecordRequest request_record2;
-                RecvData<RecordRequest>(data, out request_record2);
-                Console.WriteLine("=========获取Record2=============:" + request_record2.photos.Count + ":" + request_record2.records.Count);
-                RecordResponse2 response_record2 = new RecordResponse2();
-                response_record2.Result = 1;
-                for (int i = 0; i < request_record2.photos.Count; i++)
-                {
-                    response_record2.photos.Add(request_record2.photos[i].PhotoID);
-                }
-                for (int i = 0; i < request_record2.records.Count; i++)
-                {
-                    response_record2.records.Add(request_record2.records[i].ID);
-                }
-                Send<RecordResponse2>(4, response_record2, context);
                 break;
 
         }
