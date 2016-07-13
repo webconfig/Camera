@@ -26,7 +26,7 @@ public class UI_Camera : UI_Base
         Btn_Set.onClick.AddListener(Btn_Set_Click);
         App.Instance.Data.ValueChange += Data_ValueChange;
         App.Instance.Data.GoodsChangeEvent += Data_GoodsChangeEvent;
-        Txt_Send.text = string.Format("已上传{1}车，总共{0}车", App.Instance.Data.Total, App.Instance.Data.Total-App.Instance.Data.LocalCount);
+        Txt_Send.text = string.Format("已上传{1}车，总共{0}车", App.Instance.Data.Set.Total, App.Instance.Data.Set.Total - App.Instance.Data.LocalCount);
         Txt_WJ_Code.text = string.Format("挖机号：{0}", App.Instance.Data.Set.WJ_Code);
         Data_GoodsChangeEvent();
     }
@@ -51,7 +51,7 @@ public class UI_Camera : UI_Base
     }
     void Data_ValueChange(int t)
     {
-        Txt_Send.text = string.Format("已上传{1}车，总共{0}车", App.Instance.Data.Total, t);
+        Txt_Send.text = string.Format("已上传{1}车，总共{0}车", App.Instance.Data.Set.Total, t);
     }
     public override void UI_End()
     {
@@ -156,7 +156,7 @@ public class UI_Camera : UI_Base
         //===修改xml
         if (App.Instance.Data.Add(wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
         {
-            Txt_Total.text = App.Instance.Data.Total.ToString();
+            Txt_Total.text = App.Instance.Data.Set.Total.ToString();
             Txt_Total.gameObject.SetActive(true);
             Img_Camera.gameObject.SetActive(false);
             Destroy(Img_Camera.texture);

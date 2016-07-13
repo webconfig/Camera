@@ -12,5 +12,5 @@ public class WJ_Set
     public string CustomerID = "";
     public string Password = "";
     public string RunType = "";
-    public string Total = "";
+    public int Total = 0;
 }
