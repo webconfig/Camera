@@ -62,15 +62,6 @@ public class DataServerHandler : ChannelHandlerAdapter
                 }
                 Send<GoodsResponse>(2, response_goods, context);
                 break;
-            //case 3:
-            //    RecordRequest request_record;
-            //    RecvData<RecordRequest>(data, out request_record);
-            //    Console.WriteLine("=========获取Record=============:" + request_record.photos.Count + ":" + request_record.records.Count);
-            //    RecordResponse response_record = new RecordResponse();
-            //    response_record.Result = 1;
-            //    response_record.id = request_record.id;
-            //    Send<RecordResponse>(3, response_record, context);
-            //    break;
             case 4:
                 RecordRequest request_record;
                 RecvData<RecordRequest>(data, out request_record);
