@@ -12,7 +12,7 @@
     using DotNetty.Transport.Channels.Sockets;
     using Microsoft.Practices.EnterpriseLibrary.SemanticLogging;
 
-namespace WJ_Server
+namespace File_Server
 {
     class Program
     {

@@ -79,7 +79,7 @@ public class DataServerHandler : ChannelHandlerAdapter
                 //====================
                 FileResponse response_over = new FileResponse();
                 response_over.Result = 1;
-                Send<FileResponse>(1, response_over, context);
+                Send<FileResponse>(2, response_over, context);
                 Console.WriteLine("=========传输完成=============：" + fs.Name);
                 break;
         }

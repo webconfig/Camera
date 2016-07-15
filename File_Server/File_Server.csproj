@@ -7,8 +7,8 @@
     <ProjectGuid>{C777D2ED-B457-4368-9544-177372CDA980}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>WJ_Server</RootNamespace>
-    <AssemblyName>WJ_Server</AssemblyName>
+    <RootNamespace>File_Server</RootNamespace>
+    <AssemblyName>File_Server</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
