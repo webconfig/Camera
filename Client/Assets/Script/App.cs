@@ -21,6 +21,7 @@ public class App : MonoBehaviour
     public FileClient FileServer;
     private float StartTimeNet=0, CdNet = 2;
     public int NetCanRun=1;
+    public event CallBack InputEvent;
     public bool NetWorkCanDo
     {
         set
@@ -69,6 +70,15 @@ public class App : MonoBehaviour
     void LateUpdate()
     {
         FileServer.Update();
+    }
+
+    public void messgae(string str)
+    {
+        Debug.Log("messgae: " + str);
+        if(InputEvent!=null)
+        {
+            InputEvent();
+        }
     }
 
     #region 退出

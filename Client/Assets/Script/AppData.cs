@@ -51,7 +51,7 @@ public class AppData
         }
         else
         {
-            Data_Set_Xml.LoadXml("<root Total='0'  WJ_Code='' Place='' FTPServer='' FTPPort='' DataServer='' DataPort='' CustomerID='' Password='' RunType='' ></root>");
+            Data_Set_Xml.LoadXml("<root Total='0' RunType='0'  WJ_Code='' Place='' FTPServer='' FTPPort='' DataServer='' DataPort='' CustomerID='' Password=''  ></root>");
             SetNode = Data_Set_Xml.SelectSingleNode("root");
         }
     }
@@ -71,6 +71,7 @@ public class AppData
     public void SaveTotal()
     {
         SetNode.Attributes["Total"].Value = Set.Total.ToString();
+        Data_Set_Xml.Save(SetFilePath);
     }
     public void SaveItem(string key,string value)
     {
@@ -174,6 +175,7 @@ public class AppData
     }
     public WJ_Record SaveItem(WJ_Photo wj_photo, System.DateTime dt, string GoodsName)
     {
+        LocalData.Photos.Add(wj_photo.PhotoID, wj_photo);
         WJ_Record wj_record = new WJ_Record();
         wj_record.CustomerID = wj_photo.CustomerID;
         wj_record.WJID = wj_photo.WJID;
@@ -184,9 +186,9 @@ public class AppData
         wj_record.EndTime = "";
         wj_record.BgeinPhotoID = wj_photo.PhotoID;
         wj_record.EndPhotoID = "";
-        wj_record.longitude = "";
-        wj_record.Latitude = "";
-        wj_record.Mode = "0";
+        wj_record.longitude = "0";
+        wj_record.Latitude = "0";
+        wj_record.Mode = App.Instance.Data.Set.RunType;
         LocalData.Records.Add(wj_record);
 
         //添加图片
@@ -264,16 +266,17 @@ public class AppData
             if (fileInfos != null && fileInfos.Length > 0)
             {
                 List<FileInfo> ffs = fileInfos.ToList();
-                ffs.Sort((s1, s2) => DateTime.Compare(s2.CreationTime, s1.CreationTime));
+                ffs.Sort((s1, s2) => DateTime.Compare(s1.CreationTime, s2.CreationTime));
                 for (int i = 0; i < ffs.Count; i++)
                 {
+                    Debug.Log(ffs[i].CreationTime);
                     RecordXmlData data_item = new RecordXmlData();
                     data_item.RequestDatas = new RecordRequest();
                     data_item.XmlPath = ffs[i].FullName;
                     data_item.Xml = new XmlDocument();
                     data_item.Xml.LoadXml(File.ReadAllText(ffs[i].FullName));
                     data_item.NodeParent = data_item.Xml.FirstChild;
-
+                    data_item.Remove = true;
                     data_item.RequestDatas = new RecordRequest();
                     string str;
                     XmlNode node;
@@ -330,8 +333,10 @@ public class AppData
         SubmitDataNew.XmlName = System.DateTime.Now.Ticks.ToString();
         SubmitDataNew.XmlPath = string.Concat(SubmitDataXmlPath, SubmitDataNew.XmlName,".xml");
         SubmitDataNew.Xml = new XmlDocument();
-        NowImgXml.Xml.LoadXml("<root></root>");
-        NowImgXml.NodeParent = NowImgXml.Xml.FirstChild;
+        SubmitDataNew.Xml.LoadXml("<root></root>");
+        SubmitDataNew.NodeParent = SubmitDataNew.Xml.FirstChild;
+        SubmitDataNew.RequestDatas = new RecordRequest();
+        SubmitDataNew.Remove = false;
     }
 
     /// <summary>
@@ -383,7 +388,7 @@ public class AppData
 
             //=========处理数据===========
             if (SubmitDatas.Count>0)
-            {
+            {//查询老数据
                 for (int k = 0; k < SubmitDatas.Count; k++)
                 {
                     if (SubmitDatas[k].RemoveData(ref records))
@@ -397,6 +402,10 @@ public class AppData
                     }
                 }
             }
+            if (records.Count > 0)
+            {
+                SubmitDataNew.RemoveData(ref records);
+            }
 
             //=====统计========
             LocalCount = 0;
@@ -404,6 +413,7 @@ public class AppData
             {
                 LocalCount += SubmitDatas[k].RequestDatas.records.Count;
             }
+            LocalCount += SubmitDataNew.RequestDatas.records.Count;
             OnValueChange();
         }
         if (GoodsChange)
@@ -447,12 +457,15 @@ public class AppData
             record.longitude = wj_record.longitude;
             record.Latitude = wj_record.Latitude;
             record.Mode = wj_record.Mode;
+            record.SeqID = node.Attributes["SeqID"].Value;
             SubmitDataNew.RequestDatas.records.Add(record);
 
             if (SubmitDataNew.NodeParent.ChildNodes.Count >= 10)
             {//超过10条记录，创建新文件
                 //复制到旧数据
-                SubmitDatas.Add(SubmitDataNew.Copy());
+                RecordXmlData newdata = SubmitDataNew.Copy();
+                newdata.Remove = true;
+                SubmitDatas.Add(newdata);
                 //创建文件
                 NewSubmitFile();
             }
@@ -562,6 +575,37 @@ public class AppData
         UpLoadImgXmls = new List<ImgXmlData>();
         ImgPath = Application.persistentDataPath + "/img/";
         ImgXmlPath = Application.persistentDataPath + "/img_xml/";
+        #region 缩略图
+        if (!Directory.Exists(ImgPath))
+        {
+            Directory.CreateDirectory(ImgPath);
+        }
+        else
+        {
+            //删除7天前的缩略图
+            DirectoryInfo theFolder = new DirectoryInfo(ImgPath);
+            FileInfo[] fileInfos = theFolder.GetFiles();
+            if (fileInfos != null && fileInfos.Length > 0)
+            {
+                List<FileInfo> ffs = fileInfos.ToList();
+                ffs.Sort((s1, s2) => DateTime.Compare(s1.CreationTime, s2.CreationTime));
+                for (int i = 0; i < ffs.Count; i++)
+                {
+                    if (ffs[i].Name[0] == 's')
+                    {
+                        TimeSpan ts = System.DateTime.Now.Subtract(ffs[i].CreationTime);
+                        if (ts.Days >= 7)
+                        {
+                            System.IO.File.Delete(ffs[i].FullName);
+                            ffs.RemoveAt(i);
+                            i--;
+                        }
+                    }
+                }
+            }
+        }
+        #endregion
+        #region xml
         if (!Directory.Exists(ImgXmlPath))
         {
             Directory.CreateDirectory(ImgXmlPath);
@@ -600,6 +644,7 @@ public class AppData
                 }
             }
         }
+        #endregion
         //==========创建最新xml========
         NewXml();
     }
@@ -613,6 +658,7 @@ public class AppData
         NowImgXml.Xml = new XmlDocument();
         NowImgXml.Xml.LoadXml("<root></root>");
         NowImgXml.NodeParent = NowImgXml.Xml.FirstChild;
+        NowImgXml.FileRequestDatas = new Dictionary<string, FileRequest>();
     }
     /// <summary>
     /// 新加一个上传的图片
@@ -637,7 +683,8 @@ public class AppData
         photo.PhotoID = wj_photo.PhotoID;
         photo.PhotoPath = wj_photo.PhotoPath;
         photo.AtTime = wj_photo.AtTime;
-        NowImgXml.FileRequestDatas.Add(dt.Ticks.ToString(), photo);
+        photo.SeqID = dt.Ticks.ToString();
+        NowImgXml.FileRequestDatas.Add(photo.SeqID, photo);
 
         if(NowImgXml.NodeParent.ChildNodes.Count>=10)
         {//超过10条，就创建一个新文件
@@ -651,18 +698,35 @@ public class AppData
     /// <param name="item"></param>
     public void DelectSubmitItem(FileRequest item)
     {
-        bool IsOld = false;
-        int index = 0;
-        ImgXmlData xml_item = null;
         if (UpLoadImgXmls.Count > 0)
         {//查询老记录
+            ImgXmlData xml_item = null;
             for (int i = 0; i < UpLoadImgXmls.Count; i++)
             {
-                if (UpLoadImgXmls[i].FileRequestDatas.ContainsKey(item.SeqID))
+                xml_item = UpLoadImgXmls[i];
+                if (xml_item.FileRequestDatas.ContainsKey(item.SeqID))
                 {//找到
-                    xml_item = UpLoadImgXmls[i];
-                    index = i;
-                    IsOld = true;
+                    xml_item.FileRequestDatas.Remove(item.SeqID);
+                    File.Delete(App.Instance.Data.ImgPath + item.PhotoPath);//删除本地的大图，保留小图
+                    if (xml_item.FileRequestDatas.Count > 0)
+                    {//还有数据，修改xml,并保存===
+                        XmlNode node;
+                        for (int k = 0; k < xml_item.NodeParent.ChildNodes.Count; k++)
+                        {
+                            node = xml_item.NodeParent.ChildNodes[k];
+                            if (String.Compare(node.Attributes["SeqID"].Value, item.SeqID) == 0)
+                            {
+                                xml_item.NodeParent.RemoveChild(node);
+                                break;
+                            }
+                        }
+                        xml_item.Xml.Save(xml_item.XmlPath);
+                    }
+                    else
+                    {//没有数据，删除该文件
+                        File.Delete(xml_item.XmlPath);
+                        UpLoadImgXmls.RemoveAt(i);
+                    }
                     break;
                 }
             }
@@ -671,34 +735,20 @@ public class AppData
         {//查询最新记录
             if (NowImgXml.FileRequestDatas.ContainsKey(item.SeqID))
             {//找到
-                xml_item = NowImgXml;
-                IsOld = false;
-            }
-        }
+                NowImgXml.FileRequestDatas.Remove(item.SeqID);
+                File.Delete(App.Instance.Data.ImgPath + item.PhotoPath);//删除本地的大图，保留小图
 
-        if (xml_item != null)
-        {
-            xml_item.FileRequestDatas.Remove(item.SeqID);
-            File.Delete(App.Instance.Data.ImgPath + item.PhotoPath);//删除本地的大图，保留小图
-            if (xml_item.FileRequestDatas.Count > 0)
-            {//还有数据
-                //====修改xml,并保存===
                 XmlNode node;
-                for (int k = 0; k < xml_item.NodeParent.ChildNodes.Count; k++)
+                for (int k = 0; k < NowImgXml.NodeParent.ChildNodes.Count; k++)
                 {
-                    node = xml_item.NodeParent.ChildNodes[k];
+                    node = NowImgXml.NodeParent.ChildNodes[k];
                     if (String.Compare(node.Attributes["SeqID"].Value, item.SeqID) == 0)
                     {
-                        xml_item.NodeParent.RemoveChild(node);
+                        NowImgXml.NodeParent.RemoveChild(node);
                         break;
                     }
                 }
-                xml_item.Xml.Save(xml_item.XmlPath);
-            }
-            else if (IsOld)
-            {//没有数据，是老记录，删除该文件
-                File.Delete(xml_item.XmlPath);
-                UpLoadImgXmls.RemoveAt(index);
+                NowImgXml.Xml.Save(NowImgXml.XmlPath);
             }
         }
     }
@@ -734,6 +784,10 @@ public class RecordXmlData
     public RecordRequest RequestDatas;
     public XmlNode NodeParent;
     public XmlDocument Xml;
+    /// <summary>
+    /// 是否需要当记录为0的时候删除该记录
+    /// </summary>
+    public bool Remove = false;
     public RecordXmlData Copy()
     {
         RecordXmlData result = new RecordXmlData();
@@ -782,7 +836,17 @@ public class RecordXmlData
             }
         }
 
-        if (RequestDatas.records.Count > 0)
+
+        if (RequestDatas.records.Count<=0&&Remove)
+        {
+            File.Delete(XmlPath);
+            NodeParent = null;
+            Xml = null;
+            RequestDatas = null;
+            remove_ids = null;
+            return true;
+        }
+        else
         {
             if (remove_ids.Count > 0)
             {
@@ -797,15 +861,6 @@ public class RecordXmlData
                 remove_ids.Clear();
             }
             return false;
-        }
-        else
-        {
-            File.Delete(XmlPath);
-            NodeParent = null;
-            Xml = null;
-            RequestDatas = null;
-            remove_ids = null;
-            return true;
         }
     }
 }

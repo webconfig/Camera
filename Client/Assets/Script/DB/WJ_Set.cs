@@ -11,6 +11,6 @@ public class WJ_Set
     public string DataPort = "";
     public string CustomerID = "";
     public string Password = "";
-    public string RunType = "";
+    public string RunType = "0";
     public int Total = 0;
 }

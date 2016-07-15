@@ -29,7 +29,7 @@ public class UI_Set : UI_Base
         Input_CustomerID.text = Set.CustomerID.ToString();
         Input_Password.text = Set.Password;
 
-        if (App.Instance.Data.Set.RunType == "1")
+        if (App.Instance.Data.Set.RunType == "0")
         {
             Tog_JC.isOn = true;
             Tog_JCJS.isOn = false;
@@ -60,6 +60,8 @@ public class UI_Set : UI_Base
         Set.DataPort = Input_Data_Port.text;
         Set.CustomerID = Input_CustomerID.text;
         Set.Password = Input_Password.text;
+
+        Set.RunType = Tog_JC.isOn ? "0" : "1";
 
         App.Instance.Data.SaveSet();
         TipsManager.Instance.RunItem("设置成功！");
