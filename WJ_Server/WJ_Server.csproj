@@ -34,6 +34,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Dos.ORM, Version=1.10.6.5, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>DLL\Dos.ORM.dll</HintPath>
+    </Reference>
     <Reference Include="DotNetty.Buffers, Version=0.3.2.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>DLL\DotNetty.Buffers.dll</HintPath>
@@ -70,11 +74,21 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DataRecv.cs" />
     <Compile Include="DataServerHandler.cs" />
+    <Compile Include="FileRecv.cs" />
     <Compile Include="LengthDecoder.cs" />
     <Compile Include="MessageDecoder.cs" />
     <Compile Include="MessageEncoder.cs" />
-    <Compile Include="model.cs" />
+    <Compile Include="Model\WJ_GoodsName.cs" />
+    <Compile Include="proto\model.cs" />
+    <Compile Include="Model\DB.cs" />
+    <Compile Include="Model\WJ_Customer.cs" />
+    <Compile Include="Model\WJ_Photo.cs" />
+    <Compile Include="Model\WJ_Photo_Submit.cs" />
+    <Compile Include="Model\WJ_Record.cs" />
+    <Compile Include="Model\WJ_Record_Submit.cs" />
+    <Compile Include="NetHelp.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SocketModel.cs" />
@@ -82,9 +96,11 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="DLL\test.bat" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <Content Include="DLL\Dos.ORM.dll" />
     <Content Include="DLL\DotNetty.Buffers.dll" />
     <Content Include="DLL\DotNetty.Codecs.dll" />
     <Content Include="DLL\DotNetty.Common.dll" />
