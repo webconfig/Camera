@@ -2,10 +2,10 @@
 [System.Serializable]
 public class WJ_Record
 {
-    public string CustomerID;
+    public long CustomerID;
     public string WJID;
 
-    public string ID;
+    public long ID;
 
     public string WorkSpace;
 
@@ -15,7 +15,7 @@ public class WJ_Record
 
     public string BgeinPhotoID;
     public string EndPhotoID;
-    public string longitude;
-    public string Latitude;
-    public string Mode;
+    public float longitude;
+    public float Latitude;
+    public int Mode;
 }

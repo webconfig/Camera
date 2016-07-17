@@ -18,7 +18,6 @@ public class App : MonoBehaviour
     }
     public AppData Data;
     public MainClient DataServer;
-    public FileClient FileServer;
     private float StartTimeNet=0, CdNet = 2;
     public int NetCanRun=1;
     public event CallBack InputEvent;
@@ -42,35 +41,33 @@ public class App : MonoBehaviour
         _instance = this;
         Data = new AppData();
         Data.Init();
-        DataServer = new MainClient();
-        DataServer.Init();
     }
     void Start()
     {
+        Application.targetFrameRate = 20;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         NetCanRun = 1;
         UI_Manager.Instance.Show("UI_Camera");
-        FileServer = new FileClient();
-        FileServer.Init();
-    }
-
-    void Update()
-    {
-        DataServer.Update();
-        Data.DelData();
-        if(NetCanRun==2)
-        {
-            if(Time.time-StartTimeNet>CdNet)
-            {
-                NetCanRun = 1;
-            }
-        }
+        DataServer = new MainClient();
+        DataServer.Init();
     }
 
     void LateUpdate()
     {
-        FileServer.Update();
+        if (NetCanRun == 2)
+        {
+            if (Time.time - StartTimeNet > CdNet)
+            {
+                NetCanRun = 1;
+            }
+        }
+        else if (NetCanRun == 1)
+        {
+            DataServer.LateUpdate();
+        }
+        Data.DelData();
     }
+
 
     public void messgae(string str)
     {
@@ -84,12 +81,10 @@ public class App : MonoBehaviour
     #region 退出
     void OnApplicationQuit()
     {
-        FileServer.OnApplicationQuit();
         DataServer.OnApplicationQuit();
     }
     void OnDestroy()
     {
-        FileServer.OnDestroy();
         DataServer.OnDestroy();
     }
     #endregion

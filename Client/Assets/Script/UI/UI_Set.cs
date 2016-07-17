@@ -2,14 +2,14 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Text.RegularExpressions;
 /// <summary>
 /// 设置
 /// </summary>
 public class UI_Set : UI_Base
 {
     public Button Btn_OK, Btn_Back;
-    public InputField Input_WJ_Code, Input_Place, Input_FTP_Server, Input_FTP_Port,
-        Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password;
+    public InputField Input_WJ_Code, Input_Place,  Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password,Input_CD;
     public Toggle Tog_JC, Tog_JCJS;
     private WJ_Set Set;
 
@@ -20,16 +20,14 @@ public class UI_Set : UI_Base
         Set = App.Instance.Data.Set;
         Input_WJ_Code.text = Set.WJ_Code;
         Input_Place.text = Set.Place;
-
-        Input_FTP_Server.text = Set.FTPServer;
-        Input_FTP_Port.text = Set.FTPPort.ToString();
-
         Input_Data_Server.text = Set.DataServer;
         Input_Data_Port.text = Set.DataPort.ToString();
+
         Input_CustomerID.text = Set.CustomerID.ToString();
         Input_Password.text = Set.Password;
+        Input_CD.text = Set.CD.ToString();
 
-        if (App.Instance.Data.Set.RunType == "0")
+        if (App.Instance.Data.Set.RunType == 0)
         {
             Tog_JC.isOn = true;
             Tog_JCJS.isOn = false;
@@ -50,25 +48,116 @@ public class UI_Set : UI_Base
 
     private void Btn_OK_Click()
     {
-        Set.WJ_Code = Input_WJ_Code.text;
-        Set.Place = Input_Place.text;
+        bool relogin = false;
+        string WJ_Code,Place, DataServer,DataPort, CustomerIDStr, Password,CDStr;
+        int data_port;
+        long CustomerID;
+        float CD;
 
-        Set.FTPServer = Input_FTP_Server.text;
-        Set.FTPPort = Input_FTP_Port.text;
+        CDStr = Input_CD.text.Trim();
+        if (string.IsNullOrEmpty(CDStr))
+        {
+            TipsManager.Instance.Error("间隔时间为空！");
+            return;
+        }
+        if (!float.TryParse(CDStr, out CD))
+        {
+            TipsManager.Instance.Error("间隔时间填写错误！");
+            return;
+        }
+        
 
-        Set.DataServer = Input_Data_Server.text;
-        Set.DataPort = Input_Data_Port.text;
-        Set.CustomerID = Input_CustomerID.text;
-        Set.Password = Input_Password.text;
+        #region 用户名和密码
+        CustomerIDStr = Input_CustomerID.text.Trim();
+        if (string.IsNullOrEmpty(CustomerIDStr))
+        {
+            TipsManager.Instance.Error("用户ID为空！");
+            return;
+        }
+        if (!long.TryParse(CustomerIDStr, out CustomerID))
+        {
+            TipsManager.Instance.Error("用户ID填写错误！");
+            return;
+        }
+        Password = Input_Password.text.Trim();
+        if (string.IsNullOrEmpty(Password))
+        {
+            TipsManager.Instance.Error("密码为空！");
+            return;
+        }
+        #endregion
 
-        Set.RunType = Tog_JC.isOn ? "0" : "1";
+        #region 挖机编号和作业地点
+        WJ_Code = Input_WJ_Code.text.Trim();
+        if (string.IsNullOrEmpty(WJ_Code))
+        {
+            TipsManager.Instance.Error("挖机编号为空！");
+            return;
+        }
+        Place = Input_Place.text.Trim();
+        if (string.IsNullOrEmpty(Place))
+        {
+            TipsManager.Instance.Error("作业地点为空！");
+            return;
+        }
+        #endregion
+
+        #region 服务器
+        DataServer = Input_Data_Server.text;
+        if (string.IsNullOrEmpty(DataServer))
+        {
+            TipsManager.Instance.Error("服务器为空！");
+            return;
+        }
+        if (!IPCheck(DataServer))
+        {
+            TipsManager.Instance.Error("服务器格式错误！");
+            return;
+        }
+        DataPort = Input_Data_Port.text;
+        if (string.IsNullOrEmpty(DataPort))
+        {
+            TipsManager.Instance.Error("服务器端口为空！");
+            return;
+        }
+        if (!int.TryParse(DataPort, out data_port))
+        {
+            TipsManager.Instance.Error("服务器端口格式错误！");
+            return;
+        }
+        #endregion
+
+        Set.CD = CD;
+        Set.WJ_Code = WJ_Code;
+        Set.Place = Place;
+
+        Set.DataServer = DataServer;
+        Set.DataPort = DataPort;
+        if (!string.Equals(Set.CustomerID, CustomerID) || !string.Equals(Set.Password, Password))
+        {
+            relogin = true;
+        }
+
+        Set.CustomerID = CustomerID;
+        Set.Password = Password;
+
+        Set.RunType = Tog_JC.isOn ? 0 : 1;
+
 
         App.Instance.Data.SaveSet();
-        TipsManager.Instance.RunItem("设置成功！");
+        TipsManager.Instance.Info("设置成功！");
         UI_Manager.Instance.Back();
+        if(relogin)
+        {
+            App.Instance.DataServer.ReLogin();//重新登录
+        }
     }
     private void Back()
     {
         UI_Manager.Instance.Back();
+    }
+    public bool IPCheck(string ip)
+    {
+        return Regex.IsMatch(ip, @"^((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$");
     }
 }

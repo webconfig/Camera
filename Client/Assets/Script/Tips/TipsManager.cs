@@ -17,27 +17,20 @@ public class TipsManager : MonoBehaviour
     }
     public List<TipsItem> datas = new List<TipsItem>();
     public TipsItem TipsPrefab;
+    public AnimationCurve AnimCure;
+    public Color InfoColor=Color.green, ErrorColor=Color.red;
     void Awake()
     {
+        InfoColor = Color.green;
         _instance = this;
     }
 
-    public void RunItem(string msg)
+    public void Info(string msg)
     {
-
-        for (int i = 0; i < datas.Count; i++)
-        {
-            if(!datas[i].gameObject.activeInHierarchy)
-            {
-                datas[i].Run(msg);
-                return;
-            }
-        }
-        TipsItem scirpt = (Instantiate(TipsPrefab.gameObject) as GameObject).GetComponent<TipsItem>();
-        scirpt.gameObject.transform.parent = transform;
-        scirpt.gameObject.transform.localPosition = Vector3.zero;
-        scirpt.gameObject.transform.localScale = new Vector3(1, 1, 1);
-        scirpt.Run(msg);
-        datas.Add(scirpt);
+        TipsPrefab.Run(msg, InfoColor);
+    }
+    public void Error(string msg)
+    {
+        TipsPrefab.Run(msg, ErrorColor);
     }
 }

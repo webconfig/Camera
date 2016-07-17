@@ -11,8 +11,7 @@ public class UI_Camera : UI_Base
     WebCamTexture cameraTexture;
     string cameraName = "";
     private bool isPlay = false;
-    private float PlayCD = 2;
-    private float PlayStartTime=-3;
+    private float PlayStartTime=-10000;
     public Button Btn_Capture, Btn_Look, Btn_Close, Btn_Set,Btn_JS;
     public Text Txt_WJ_Code, Txt_Goods, Txt_Send, Txt_Time,Txt_Total,Txt_JS_Time,Txt_Js_Btn;
     public Dropdown DL_Goods;
@@ -22,17 +21,19 @@ public class UI_Camera : UI_Base
     /// </summary>
     public int JsState = 0;
     public System.DateTime JsStartTime;
+    private Texture2D snap;
+    private Color[] cRes;
     public override void UI_Start()
     {
-        Debug.Log(App.Instance.Data.Set.RunType);
-        if (App.Instance.Data.Set.RunType == "0")
+        //Debug.Log(App.Instance.Data.Set.RunType);
+        if (App.Instance.Data.Set.RunType == 0)
         {
             Btn_JS.gameObject.SetActive(false);
             Txt_JS_Time.gameObject.SetActive(false);
         }
         else
         {
-            if(JsState==0)
+            if (JsState == 0)
             {
                 Txt_Js_Btn.text = "开 始";
             }
@@ -57,6 +58,44 @@ public class UI_Camera : UI_Base
         Txt_Send.text = string.Format("已上传{1}车，总共{0}车", App.Instance.Data.Set.Total, App.Instance.Data.Set.Total - App.Instance.Data.LocalCount);
         Txt_WJ_Code.text = string.Format("挖机号：{0}", App.Instance.Data.Set.WJ_Code);
         Data_GoodsChangeEvent();
+
+        WJ_Record wr = null;
+        if (App.Instance.Data.LocalData.Records.Count > 0)
+        {
+            wr = App.Instance.Data.LocalData.Records.Last();
+        }
+        if (wr != null && !string.IsNullOrEmpty(wr.BgeinPhotoID) && string.IsNullOrEmpty(wr.EndPhotoID))
+        {
+            Txt_Total.gameObject.SetActive(false);
+            Img_Camera.gameObject.SetActive(true);
+
+            if (Img_Camera.texture == null)
+            {//加载最后一次的照片
+                string path = App.Instance.Data.ImgMinPath + App.Instance.Data.LocalData.Photos[wr.BgeinPhotoID].PhotoMiniPath;
+                FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
+                fileStream.Seek(0, SeekOrigin.Begin);
+                //创建文件长度缓冲区
+                byte[] bytes = new byte[fileStream.Length];
+                //读取文件
+                fileStream.Read(bytes, 0, (int)fileStream.Length);
+                //释放文件读取流
+                fileStream.Close();
+                fileStream.Dispose();
+                fileStream = null;
+
+                //创建Texture
+                snap = new Texture2D(116, 116);
+                snap.LoadImage(bytes);
+                Img_Camera.texture = snap;
+            }
+        }
+        else
+        {
+            Txt_Total.text = App.Instance.Data.Set.Total.ToString();
+            Txt_Total.gameObject.SetActive(true);
+            Img_Camera.gameObject.SetActive(false);
+            Destroy(Img_Camera.texture);
+        }
     }
     
     void JS_Btn_Click()
@@ -118,17 +157,22 @@ public class UI_Camera : UI_Base
     {
         if (isPlay)
         {
-            if (Time.time - PlayStartTime < PlayCD) { return; }
+            if (Time.time - PlayStartTime <App.Instance.Data.Set.CD) 
+            {
+                float k=App.Instance.Data.Set.CD-Time.time+ PlayStartTime;
+                TipsManager.Instance.Error(string.Format("{0}秒后才能再次抓拍", k.ToString("0.0")));
+                return; 
+            }
             PlayStartTime = Time.time;
             if (string.IsNullOrEmpty(App.Instance.Data.Set.WJ_Code))
             {
-                TipsManager.Instance.RunItem("请先设置基础信息");
+                TipsManager.Instance.Error("请先设置基础信息");
                 return;
             }
             App.Instance.NetWorkCanDo = false;
             isPlay = false;
             cameraTexture.Pause();
-            StartCoroutine(getTexture2d());
+            getTexture2d();
         }
     }
     public void Btn_Look_Click()
@@ -155,20 +199,19 @@ public class UI_Camera : UI_Base
         {
             WebCamDevice[] devices = WebCamTexture.devices;
             cameraName = devices[0].name;
-            cameraTexture = new WebCamTexture(cameraName, Screen.width, Screen.height, 15);
+            cameraTexture = new WebCamTexture(cameraName, Screen.width, Screen.height, 10);
             obj.texture = cameraTexture;
             obj.material.mainTexture = cameraTexture;
             cameraTexture.Play();
+            width = cameraTexture.width;
+            height = cameraTexture.height;
+            cRes = cameraTexture.GetPixels();
             isPlay = true;
         }
     }
-    IEnumerator getTexture2d()
+    private int width,height;
+    void getTexture2d()
     {
-        yield return new WaitForEndOfFrame();
-        if (Img_Camera.texture != null)
-        {
-            Destroy(Img_Camera.texture);
-        }
         //新建一个model
         System.DateTime dt = System.DateTime.Now;
         WJ_Photo wj_photo = new WJ_Photo();
@@ -177,15 +220,12 @@ public class UI_Camera : UI_Base
         wj_photo.PhotoID = string.Format("{0}_{1}_{2}", App.Instance.Data.Set.CustomerID,
             App.Instance.Data.Set.WJ_Code, dt.ToString("yyMMddHHmmss"));
         wj_photo.PhotoPath = wj_photo.PhotoID + ".jpg";
-        wj_photo.PhotoMiniPath = string.Format("{0}{1}{2}", "s_", wj_photo.PhotoID, ".jpg");
+        wj_photo.PhotoMiniPath = wj_photo.PhotoPath;
         wj_photo.AtTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
 
         //图片翻转180度
-        int width = cameraTexture.width;
-        int height = cameraTexture.height;
-        Texture2D snap = new Texture2D(width, height);
+        snap = new Texture2D(width, height);
         Color[] cSource = cameraTexture.GetPixels();
-        Color[] cRes = new Color[cSource.Length];
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -194,14 +234,15 @@ public class UI_Camera : UI_Base
             }
         }
         snap.SetPixels(cRes);
-        snap.Apply();
+        snap.Apply(false);
+
         //===生成大图
-        byte[] pngData = snap.EncodeToJPG(30);
+        byte[] pngData = snap.EncodeToJPG(50);
         File.WriteAllBytes(App.Instance.Data.ImgPath + wj_photo.PhotoPath, pngData);
         //===生成缩略图
         TextureScale.Bilinear(snap, 100, 100);
-        pngData = snap.EncodeToJPG(20);
-        File.WriteAllBytes(App.Instance.Data.ImgPath + wj_photo.PhotoMiniPath, pngData);
+        pngData = snap.EncodeToJPG(40);
+        File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
         //===修改xml
         if (App.Instance.Data.Add(wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
         {
@@ -216,7 +257,7 @@ public class UI_Camera : UI_Base
             Img_Camera.gameObject.SetActive(true);
             Img_Camera.texture = snap;
         }
-        TipsManager.Instance.RunItem("添加成功！");
+        TipsManager.Instance.Info("添加成功！");
         cameraTexture.Play();
         isPlay = true;
         App.Instance.NetWorkCanDo = true;

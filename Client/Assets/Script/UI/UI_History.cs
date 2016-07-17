@@ -8,33 +8,36 @@ public class UI_History : UI_Base
 {
     public Button Btn_Back;
     public UI_Control_Table table;
+    public Text TxtTotal;
     public override void UI_Start()
     {
         Btn_Back.onClick.AddListener(Btn_Back_Click);
+        ShowData(App.Instance.Data.LocalData);
+        table.ToEnd();
+    }
+    private void ShowData(LocalXmlData xd)
+    {
         WJ_Record model;
-        for (int i = 0; i <App.Instance.Data.LocalData.Records.Count; i++)
+        TxtTotal.text = string.Format("总共{0}条记录", xd.Records.Count);
+        for (int i = 0; i < xd.Records.Count; i++)
         {
-            model = App.Instance.Data.LocalData.Records[i];
+            model = xd.Records[i];
             Dictionary<string, string> data_row = new Dictionary<string, string>();
             data_row.Add("WJID", model.WJID);
             data_row.Add("BeginTime", model.BeginTime);
             data_row.Add("EndTime", model.EndTime);
-            data_row.Add("Mode", model.Mode == "0" ? "计次" : "计时");
+            data_row.Add("Mode", model.Mode == 0 ? "计次" : "计时");
             if (!string.IsNullOrEmpty(model.BgeinPhotoID))
             {
-                //string str = App.Instance.Data.LocalData.Photos[model.BgeinPhotoID].PhotoMiniPath;
-                data_row.Add("PhotoMiniPathBegin", App.Instance.Data.ImgPath + App.Instance.Data.LocalData.Photos[model.BgeinPhotoID].PhotoMiniPath);
+                data_row.Add("PhotoMiniPathBegin", App.Instance.Data.ImgMinPath + xd.Photos[model.BgeinPhotoID].PhotoMiniPath);
             }
             if (!string.IsNullOrEmpty(model.EndPhotoID))
             {
-                //string str = App.Instance.Data.LocalData.Photos[model.EndPhotoID].PhotoMiniPath;
-                data_row.Add("PhotoMiniPathEnd", App.Instance.Data.ImgPath + App.Instance.Data.LocalData.Photos[model.EndPhotoID].PhotoMiniPath);
+                data_row.Add("PhotoMiniPathEnd", App.Instance.Data.ImgMinPath + xd.Photos[model.EndPhotoID].PhotoMiniPath);
             }
             table.AddRow(data_row, null);
         }
-        table.ToEnd();
     }
-
     public override void UI_End()
     {
         table.Clear();

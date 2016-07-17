@@ -5,7 +5,7 @@ using System;
 /// </summary>
 public class WJ_Photo
 {
-    public string CustomerID { get; set; }
+    public long CustomerID { get; set; }
     public string WJID { get; set; }
     public string PhotoID { get; set; }
     public string PhotoPath { get; set; }
