@@ -249,12 +249,19 @@ namespace google.protobuf
       get { return _name; }
       set { _name = value; }
     }
-    private long _dir;
-    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"dir", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public long dir
+    private long _CustomerID;
+    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"CustomerID", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public long CustomerID
     {
-      get { return _dir; }
-      set { _dir = value; }
+      get { return _CustomerID; }
+      set { _CustomerID = value; }
+    }
+    private string _AtTime;
+    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"AtTime", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string AtTime
+    {
+      get { return _AtTime; }
+      set { _AtTime = value; }
     }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
@@ -341,6 +348,23 @@ namespace google.protobuf
     {
       get { return _datas; }
       set { _datas = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"Heart")]
+  public partial class Heart : global::ProtoBuf.IExtensible
+  {
+    public Heart() {}
+    
+    private long _time;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"time", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public long time
+    {
+      get { return _time; }
+      set { _time = value; }
     }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
