@@ -58,6 +58,7 @@ public class AppData
         Set.RunType =int.Parse(SetNode.Attributes["RunType"].Value);
         Set.Total = int.Parse(SetNode.Attributes["Total"].Value);
         Set.CD = float.Parse(SetNode.Attributes["CD"].Value);
+        Set.JSCD = float.Parse(SetNode.Attributes["JSCD"].Value);
     }
     public void SaveSet()
     {
@@ -69,6 +70,7 @@ public class AppData
         SetNode.Attributes["Password"].Value = Set.Password;
         SetNode.Attributes["RunType"].Value = Set.RunType.ToString();
         SetNode.Attributes["CD"].Value = Set.CD.ToString();
+        SetNode.Attributes["JSCD"].Value = Set.JSCD.ToString();
         Data_Set_Xml.Save(SetFilePath);
     }
     public void SaveTotal()
@@ -176,7 +178,7 @@ public class AppData
         LocalData.Photos = new Dictionary<string, WJ_Photo>();
         LocalData.Records = new List<WJ_Record>();
     }
-    public WJ_Record SaveItem(WJ_Photo wj_photo, System.DateTime dt, string GoodsName)
+    public WJ_Record SaveItem(WJ_Photo wj_photo, System.DateTime dt, string GoodsName,int run_type)
     {
         LocalData.Photos.Add(wj_photo.PhotoID, wj_photo);
         WJ_Record wj_record = new WJ_Record();
@@ -191,7 +193,7 @@ public class AppData
         wj_record.EndPhotoID = "";
         wj_record.longitude = 0;
         wj_record.Latitude = 0;
-        wj_record.Mode = App.Instance.Data.Set.RunType;
+        wj_record.Mode = run_type;
         LocalData.Records.Add(wj_record);
 
         //添加图片
@@ -508,7 +510,7 @@ public class AppData
             record.EndPhotoID = wj_record.EndPhotoID;
             record.longitude = wj_record.longitude;
             record.Latitude = wj_record.Latitude;
-            record.Mode = wj_record.Mode;
+            record.Mode = 0;
             SubmitDataNew.RequestDatas.records.Add(record);
 
             if (SubmitDataNew.NodeParent.ChildNodes.Count >= 10)
@@ -537,11 +539,29 @@ public class AppData
             }
 
             //添加本地记录
-            WJ_Record wj_record = SaveItem(wj_photo, dt, GoodsName);
+            WJ_Record wj_record = SaveItem(wj_photo, dt, GoodsName,0);
             //添加上传记录
             AddSubmit(wj_record, dt);
             return false;
         }
+    }
+    public bool Add2(WJ_Photo wj_photo, System.DateTime dt, string GoodsName)
+    {
+        //保存到图片上传表
+        AddSubmitItem(wj_photo, dt);
+        System.TimeSpan ts = System.DateTime.Now.Date - StartTime;
+        if (ts.Days >= 1)
+        {//超过一天,创建新的本地记录
+            StartTime = System.DateTime.Now.Date;
+            string NowDataXmlPath = string.Format("{0}{1}.xml", LocalDataParentPath, StartTime.ToString("yyyy-MM-dd"));
+            NewLocalData(NowDataXmlPath, "<root><photo></photo><record></record></root>");
+        }
+
+        //添加本地记录
+        WJ_Record wj_record = SaveItem(wj_photo, dt, GoodsName,1);
+        //添加上传记录
+        AddSubmit(wj_record, dt);
+        return false;
     }
 
     #region Goods

@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 public class UI_Set : UI_Base
 {
     public Button Btn_OK, Btn_Back;
-    public InputField Input_WJ_Code, Input_Place,  Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password,Input_CD;
+    public InputField Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_CD, Input_JSCD;
     public Toggle Tog_JC, Tog_JCJS;
     private WJ_Set Set;
 
@@ -26,7 +26,7 @@ public class UI_Set : UI_Base
         Input_CustomerID.text = Set.CustomerID.ToString();
         Input_Password.text = Set.Password;
         Input_CD.text = Set.CD.ToString();
-
+        Input_JSCD.text = (Set.JSCD / 60.0f).ToString();
         if (App.Instance.Data.Set.RunType == 0)
         {
             Tog_JC.isOn = true;
@@ -49,23 +49,33 @@ public class UI_Set : UI_Base
     private void Btn_OK_Click()
     {
         bool relogin = false;
-        string WJ_Code,Place, DataServer,DataPort, CustomerIDStr, Password,CDStr;
+        string WJ_Code,Place, DataServer,DataPort, CustomerIDStr, Password,CDStr,CDJSStr;
         int data_port;
         long CustomerID;
-        float CD;
+        float CD,CDJS;
 
         CDStr = Input_CD.text.Trim();
         if (string.IsNullOrEmpty(CDStr))
         {
-            TipsManager.Instance.Error("间隔时间为空！");
+            TipsManager.Instance.Error("计次时间间隔为空！");
             return;
         }
         if (!float.TryParse(CDStr, out CD))
         {
-            TipsManager.Instance.Error("间隔时间填写错误！");
+            TipsManager.Instance.Error("计次时间间隔填写错误！");
             return;
         }
-        
+        CDJSStr = Input_JSCD.text.Trim();
+        if (string.IsNullOrEmpty(CDJSStr))
+        {
+            TipsManager.Instance.Error("计时自动结束为空！");
+            return;
+        }
+        if (!float.TryParse(CDJSStr, out CDJS))
+        {
+            TipsManager.Instance.Error("计时自动结束填写错误！");
+            return;
+        }
 
         #region 用户名和密码
         CustomerIDStr = Input_CustomerID.text.Trim();
@@ -128,6 +138,7 @@ public class UI_Set : UI_Base
         #endregion
 
         Set.CD = CD;
+        Set.JSCD = CDJS*60;
         Set.WJ_Code = WJ_Code;
         Set.Place = Place;
 

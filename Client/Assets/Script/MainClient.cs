@@ -11,22 +11,22 @@ using System.Collections.Generic;
 using System.Linq; 
 public class MainClient
 {
-    //public const string HOST = "112.74.80.245";
-    //public const string HOST = "192.168.2.13";
-    //public const int PORT = 3333;
     public static TcpClient client;
     private byte[] recieveData;
     private  Int32 ReceiveBufferSize = 3 * 1024;
     public ClientStat State = ClientStat.ConnFail;
-    public float ConnStartTime,ConnCD = 30;
+    public float ConnStartTime,ConnCD = 15;
     public float SendStartTime = 0, SendTimeOut=10;
     public float SendDataStartTime,SendDataCD = 3;
     public float ReLoginStartTime, ReLoginCD = 5;
     public float SendFileStartTime, SendFileCD=5,SendFileTimeOut = 15;
     public float LoginStartTime = 0, LoginTimeOut = 10;
+    private float heart_start_time = 0,heart_cd=1,heart_timeout=5;
+    private float heart_state = -1;
+    public bool RttChange = false;
+    public double Rtt;
     public void Init()
     {
-
         if (string.IsNullOrEmpty(App.Instance.Data.Set.DataServer) || string.IsNullOrEmpty(App.Instance.Data.Set.DataPort))
         {
             TipsManager.Instance.Error("服务器配置信息错误");
@@ -43,7 +43,7 @@ public class MainClient
         catch(Exception ex)
         {
             Debug.Log(ex.ToString());
-            TipsManager.Instance.Error("连接服务器失败，单机工作");
+            TipsManager.Instance.Error("连接服务器失败，脱机工作！");
             GotoConnFail();
             return;
         }
@@ -63,6 +63,10 @@ public class MainClient
         catch
         {
             return;
+        }
+        if (RttChangeEvent != null)
+        {
+            RttChangeEvent("网络：<color=#00ff00ff>连线</color>");
         }
         recieveData = new byte[ReceiveBufferSize];
         client.GetStream().BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, client.GetStream());//在start里面开始异步接收消息
@@ -135,7 +139,6 @@ public class MainClient
     }
     public void GotoConnFail()
     {
-        Debug.Log("==断线重连==");
         State = ClientStat.ConnFail;
         ConnStartTime = Time.time;
     }
@@ -184,7 +187,7 @@ public class MainClient
                 {
                     if (Time.time - SendDataStartTime < SendDataCD) { return; }
                     SendDataStartTime = Time.time;
-                    Debug.Log("========发送老的数据记录=======:" + App.Instance.Data.SubmitDatas[0].RequestDatas.records.Count);
+                    AddStr("发送数据记录" + App.Instance.Data.SubmitDatas[0].RequestDatas.records.Count+"条");
                     RecordRequest data = App.Instance.Data.SubmitDatas[0].RequestDatas;
                     GotoSend();
                     Send<RecordRequest>(4, data);
@@ -193,7 +196,7 @@ public class MainClient
                 {
                     if (Time.time - SendDataStartTime < SendDataCD) { return; }
                     SendDataStartTime = Time.time;
-                    Debug.Log("========发送新的当前数据记录=======:" + App.Instance.Data.SubmitDataNew.RequestDatas.records.Count);
+                    AddStr("发送数据记录" + App.Instance.Data.SubmitDataNew.RequestDatas.records.Count + "条");
                     GotoSend();
                     Send<RecordRequest>(4, App.Instance.Data.SubmitDataNew.RequestDatas);
                 }
@@ -252,7 +255,7 @@ public class MainClient
                         break;
                     case 4:
                         SendFileState = 0;
-                        Debug.Log("完成文件：" + CurrentFile.PhotoPath);
+                        AddStr("完成文件：" + CurrentFile.PhotoPath);
                         CloseFile();//关闭文件
                         App.Instance.Data.DelectSubmitItem(CurrentFile);//更新xml信息
                         GotoSendData();//发送完成，去发送数据
@@ -267,6 +270,57 @@ public class MainClient
                     GotoConnFail();
                 }
                 break;
+        }
+        if (State != ClientStat.ConnFail)
+        {
+            if (heart_state == 0)
+            {
+                if (Time.time - heart_start_time >= heart_cd)
+                {
+                    //Debug.Log("发送星跳报");
+                    Heart heart = new Heart();
+                    heart.time = System.DateTime.Now.Ticks;
+                    Send<Heart>(0, heart);
+                    heart_state = 1;
+                    heart_start_time = Time.time;
+                }
+            }
+            else if (heart_state == 1)
+            {
+                if (Time.time - heart_start_time >= heart_timeout)
+                {//超时
+                    Rtt = 10000;
+                    heart_state = 0;
+                }
+            }
+        }
+        if (RttChange)
+        {
+            RttChange = false;
+            if (App.Instance.DataServer.State != ClientStat.ConnFail)
+            {
+                if (App.Instance.DataServer.Rtt > 1000)
+                {
+                    if (RttChangeEvent != null)
+                    {
+                        RttChangeEvent("网络往返时间：<color=#FF0000FF>大于1000</color>");
+                    }
+                }
+                else if (App.Instance.DataServer.Rtt > 150)
+                {
+                    if (RttChangeEvent != null)
+                    {
+                        RttChangeEvent(string.Format("网络往返时间：<color=#00ff00ff>{0}</color>", App.Instance.DataServer.Rtt.ToString("f1")));
+                    }
+                }
+                else
+                {
+                    if (RttChangeEvent != null)
+                    {
+                        RttChangeEvent(string.Format("网络往返时间：<color=#00ff00ff>{0}</color>", App.Instance.DataServer.Rtt.ToString("f1")));
+                    }
+                }
+            }
         }
     }
 
@@ -318,9 +372,11 @@ public class MainClient
             SendFileState = 1;
             FileStartRequest request = new FileStartRequest();
             request.name = CurrentFile.PhotoPath;
-            request.dir = App.Instance.Data.Set.CustomerID;
+            request.CustomerID = CurrentFile.CustomerID;
+            request.WJID = CurrentFile.WJID;
+            request.AtTime =Convert.ToDateTime(CurrentFile.AtTime).ToString("yyyy-MM-dd");
             Send<FileStartRequest>(11, request);
-            Debug.Log("开始发送文件：" + CurrentFile.PhotoPath);
+            AddStr("开始发送文件：" + CurrentFile.PhotoPath);
             return true;
         }
         return false;
@@ -357,7 +413,16 @@ public class MainClient
         byte[] DataByte = new byte[msgByte.Length - 4];
         System.Array.ConstrainedCopy(msgByte, 4, DataByte, 0, DataByte.Length);
         //==========================================================================
-        if(tp==1)
+        if (tp == 0)
+        {
+            //Debug.Log("接收星跳报");
+            Heart ResponseHeart;
+            RecvData<Heart>(DataByte, out ResponseHeart);
+            TimeSpan ts = new TimeSpan(System.DateTime.Now.Ticks - ResponseHeart.time);
+            Rtt = ts.TotalMilliseconds;
+            RttChange = true;
+        }
+        else if(tp==1)
         {//登陆返回结果
             LoginResponse ResponseModel;
             RecvData<LoginResponse>(DataByte, out ResponseModel);
@@ -378,6 +443,7 @@ public class MainClient
                         App.Instance.Data.AddGoods(GoodsResponseModel);
                     }
                     catch { }
+                    heart_state = 0;
                     GotoSendData();
                 }
                 else if (tp == 3)
@@ -454,29 +520,10 @@ public class MainClient
         }
         catch
         {
-            Debug.Log("Send Error");
             CloseFile();
             GotoConnFail();
         }
     }
-    public void Send(int type)
-    {
-        byte[] type_value = IntToBytes(type);
-        byte[] Length_value = IntToBytes(type_value.Length);
-        byte[] data = new byte[Length_value.Length + type_value.Length];
-        Length_value.CopyTo(data, 0);
-        type_value.CopyTo(data, 4);
-        try
-        {
-            client.GetStream().Write(data, 0, data.Length);
-        }
-        catch
-        {
-            CloseFile();
-            GotoConnFail();
-        }
-    }
-
     public void RecvData<T>(byte[] RecvDataByte,out T t)
     {
         using (MemoryStream ms = new MemoryStream())
@@ -506,8 +553,33 @@ public class MainClient
         }
         return bytes;
     }
-
     #endregion
+
+
+    #region 信息
+    public List<string> RunStrs=new List<string>();
+    public int RunStrsMax = 10;
+    public event CallBack<string> RunStrsChangeEvent;
+    public void AddStr(string str)
+    {
+        if(RunStrs.Count>=RunStrsMax)
+        {
+            RunStrs.RemoveAt(0);
+        }
+        RunStrs.Add(str);
+        if(RunStrsChangeEvent!=null)
+        {
+            string result="";
+            for (int i = 0; i < RunStrs.Count; i++)
+            {
+                result = string.Concat(result, RunStrs[i]) + "\n";
+            }
+            RunStrsChangeEvent(result.ToString());
+        }
+    }
+    #endregion
+
+    public event CallBack<string> RttChangeEvent;
 }
 public enum ClientStat
 {

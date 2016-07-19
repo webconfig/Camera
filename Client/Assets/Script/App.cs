@@ -47,9 +47,9 @@ public class App : MonoBehaviour
         Application.targetFrameRate = 20;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         NetCanRun = 1;
-        UI_Manager.Instance.Show("UI_Camera");
         DataServer = new MainClient();
         DataServer.Init();
+        UI_Manager.Instance.Show("UI_Camera");
     }
 
     void LateUpdate()
