@@ -7,6 +7,6 @@ using Dos.ORM;
 
 public class Db
 {
-    public static readonly DbSession Context = new DbSession(DatabaseType.SqlServer, "data source=.;initial catalog=RS_PIS;user id=wj;pwd=Mc111111");
+    public static DbSession Context;
 }
 
