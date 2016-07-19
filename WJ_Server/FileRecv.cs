@@ -24,8 +24,8 @@ public class FileRecv
                 NetHelp.RecvData<FileStartRequest>(data, out request_file);
 
                 //判断文件夹是否存在
-                string localpath =string.Format(@"{0}\{1}\{2}\",FilePath,
-                    request_file.CustomerID.ToString(),request_file.AtTime); // string.Concat(FilePath, request_file.dir.ToString(), @"\");
+                string localpath = string.Format(@"{0}\{1}\{2}\{3}\", FilePath,
+                    request_file.CustomerID.ToString(),request_file.WJID, request_file.AtTime); 
                 if (!System.IO.Directory.Exists(localpath))
                 {
                     System.IO.Directory.CreateDirectory(localpath);
@@ -47,7 +47,7 @@ public class FileRecv
                 }
                 StartWrite = true;
                 NetHelp.Send<FileResponse>(11, respinse_file, context);
-                Console.WriteLine("==开始上传文件==：" + fs.Name);
+                Debug.Info("开始上传文件：" + fs.Name);
                 break;
             case 12://上传中
                 if (!StartWrite) { return; }
@@ -62,12 +62,8 @@ public class FileRecv
                 if (fs != null)
                 {
                     fs.Close();
-                    Console.WriteLine("==传输完成：" + fs.Name);
+                    Debug.Info("传输完成：" + fs.Name);
                     fs = null;
-                }
-                else
-                {
-                    Console.WriteLine("=========文件为空====");
                 }
                 //=====写入数据库=====
                 var where = new Where<WJ_Photo_Submit>();
@@ -77,8 +73,8 @@ public class FileRecv
                 WJ_Photo_Submit model = Db.Context.From<WJ_Photo_Submit>().Where(where).First();
                 if (model != null)
                 {
-                    Console.WriteLine("===WJ_Photo_Submit 已经存在数据：{0}---{1}---{2}",
-                        request_over.CustomerID, request_over.WJID, request_over.PhotoID);
+                    Debug.Info(string.Format("===WJ_Photo_Submit 已经存在数据：{0}---{1}---{2}",
+                        request_over.CustomerID, request_over.WJID, request_over.PhotoID));
                 }
                 else
                 {

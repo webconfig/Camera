@@ -68,10 +68,13 @@ public class DataServerHandler : ChannelHandlerAdapter
             switch(idle_event.State)
             {
                 case IdleState.ReaderIdle://读超时
+                    Debug.Error(context.Channel.Id + "--读超时");
                     break;
                 case IdleState.WriterIdle://写超时
+                    Debug.Error(context.Channel.Id + "--写超时");
                     break;
                 case IdleState.AllIdle://都超时
+                    Debug.Error(context.Channel.Id + "--读写超时");
                     break;
             }
         }

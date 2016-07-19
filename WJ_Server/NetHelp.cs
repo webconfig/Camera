@@ -28,7 +28,7 @@ public  class NetHelp
         type_value.CopyTo(data, 4);
         msg.CopyTo(data, 8);
         IByteBuffer Result = context.Allocator.Buffer();
-        Console.WriteLine("==发送数据：" + data.Length);
+        //Console.WriteLine("==发送数据：" + data.Length);
         Result.WriteBytes(data);
         context.WriteAndFlushAsync(Result);
     }

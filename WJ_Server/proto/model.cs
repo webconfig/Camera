@@ -263,6 +263,13 @@ namespace google.protobuf
       get { return _AtTime; }
       set { _AtTime = value; }
     }
+    private string _WJID;
+    [global::ProtoBuf.ProtoMember(4, IsRequired = true, Name=@"WJID", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string WJID
+    {
+      get { return _WJID; }
+      set { _WJID = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }

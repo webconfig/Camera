@@ -16,7 +16,7 @@ public class DataRecv
         switch (tp)
         {
             case 1://登录
-                Console.WriteLine("==登录==");
+                Debug.Info("登录");
                 LoginRequest request_login;
                 NetHelp.RecvData<LoginRequest>(data, out request_login);
                 LoginResponse response_login = new LoginResponse();
@@ -28,23 +28,23 @@ public class DataRecv
                 if (model != null && string.Equals(request_login.Password, model.Password))
                 {
                     response_login.Result = 1;
-                    Console.WriteLine("==登录成功==");
+                    Debug.Info("登录成功");
                 }
                 else
                 {
                     response_login.Result = 0;
-                    Console.WriteLine("==登录失败==");
+                    Debug.Info("登录失败");
                 }
                 ////======测试========================
                 //response_login.Result = 1;
-                //Console.WriteLine("==登录成功==");
+                //Debug.Info("登录成功");
 
                 NetHelp.Send<LoginResponse>(1, response_login, context);
                 break;
             case 2://获取Goods
                 GoodsRequest request_goods;
                 NetHelp.RecvData<GoodsRequest>(data, out request_goods);
-                Console.WriteLine("==获取Goods：" + request_goods.CustomerID);
+                Debug.Info("获取Goods：" + request_goods.CustomerID);
                 GoodsResponse response_goods = new GoodsResponse();
                 //=====数据库=======
                 var where_goods = new Where<WJ_GoodsName>();
@@ -70,8 +70,7 @@ public class DataRecv
             case 4:
                 RecordRequest request_record;
                 NetHelp.RecvData<RecordRequest>(data, out request_record);
-                Console.WriteLine("==上传Record==:" + request_record.records.Count);
-
+                Debug.Info("上传Record==:" + request_record.records.Count);
                 RecordResponse response_record = new RecordResponse();
                 RecordRequest.WJ_Record_Submit up_model;
 
@@ -123,7 +122,7 @@ public class DataRecv
                 }
                 catch (Exception)
                 {
-                    Console.WriteLine("[Error]==存储Record==:" + response_record.records.Count);
+                    Debug.Error("存储Record==:" + response_record.records.Count);
                     trans.Rollback();
                     ok = false;
                 }
@@ -133,12 +132,11 @@ public class DataRecv
                 }
                 if (ok)
                 {
-                    Console.WriteLine("==成功存储Record==:" + response_record.records.Count);
+                    Debug.Info("成功存储Record==:" + response_record.records.Count);
                     NetHelp.Send<RecordResponse>(3, response_record, context);
                 }
                 else
                 {
-                    Console.WriteLine("==存储Record数据库错误==" + response_record.records.Count);
                     response_record.records.Clear();
                     NetHelp.Send<RecordResponse>(3, response_record, context);
                 }

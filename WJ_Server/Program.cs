@@ -32,13 +32,13 @@ namespace WJ_Server
                 bootstrap
                     .Group(bossGroup, workerGroup)
                     .Channel<TcpServerSocketChannel>()
-                    .Option(ChannelOption.SoBacklog, 100)
+                    .Option(ChannelOption.SoKeepalive, true)
                     .Handler(new LoggingHandler(LogLevel.INFO))
                     .ChildHandler(new ActionChannelInitializer<ISocketChannel>(channel =>
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
                         // 超时处理：参数分别为读超时时间、写超时时间、读和写都超时时间、时间单位
-                        pipeline.AddLast(new IdleStateHandler(15, 30, 30));
+                        pipeline.AddLast(new IdleStateHandler(10, 15, 20));
                         pipeline.AddLast(new LengthDecoder(1024*3, 0, 4, 0, 4));
                         pipeline.AddLast(new DataServerHandler());
                     }));
