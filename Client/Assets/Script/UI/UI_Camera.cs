@@ -16,11 +16,6 @@ public class UI_Camera : UI_Base
     public Text Txt_WJ_Code, Txt_Goods, Txt_Send, Txt_Time,Txt_Total,Txt_JS_Time,Txt_Js_Btn,Txt_NetWork,Txt_RunStrs,Txt_NowTime;
     public Dropdown DL_Goods;
     public RawImage Img_Camera;
-    /// <summary>
-    /// 0:初始 1：开始计时 
-    /// </summary>
-    public int JsState = 0;
-    public System.DateTime JsStartTime;
     private Texture2D snap;
     private Color[] cRes;
     public override void UI_Start()
@@ -46,12 +41,9 @@ public class UI_Camera : UI_Base
         {
             wr = App.Instance.Data.LocalData.Records.Last();
         }
-        JsState = 0;
         time_old = System.DateTime.Now;
         if (wr != null && !string.IsNullOrEmpty(wr.BgeinPhotoID) && string.IsNullOrEmpty(wr.EndPhotoID))
         {
-            JsState = 1;
-            JsStartTime = System.Convert.ToDateTime(wr.BeginTime);
             Txt_Total.gameObject.SetActive(false);
             Img_Camera.gameObject.SetActive(true);
 
@@ -84,13 +76,13 @@ public class UI_Camera : UI_Base
         }
 
         if (App.Instance.Data.Set.RunType == 0)
-        {
+        {//计次
             Btn_JS.gameObject.SetActive(false);
             Txt_JS_Time.gameObject.SetActive(false);
         }
         else
-        {
-            if (JsState == 0)
+        {//计时
+            if (App.Instance.Data.LocalData.Records_JS!=null)
             {
                 Txt_Js_Btn.text = "开 始";
             }
@@ -165,35 +157,18 @@ public class UI_Camera : UI_Base
                 TipsManager.Instance.Error("请先设置基础信息");
                 return;
             }
-            if (Time.time - PlayStartTime <App.Instance.Data.Set.CD) 
+            if (Time.time - PlayStartTime < App.Instance.Data.Set.CD)
             {
-                float k=App.Instance.Data.Set.CD-Time.time+ PlayStartTime;
+                float k = App.Instance.Data.Set.CD - Time.time + PlayStartTime;
                 TipsManager.Instance.Error(string.Format("{0}秒后才能再次抓拍", k.ToString("0.0")));
-                return; 
+                return;
             }
-            if (App.Instance.Data.Set.RunType == 1)
-            {//计时
-                if (JsState == 0)
-                {
-                    JsState = 1;
-                    Txt_JS_Time.text = "00:00:00";
-                    JsStartTime = System.DateTime.Now;
-                    Txt_Js_Btn.text = "结 束";
-                }
-                else
-                {
-                    JsState = 0;
-
-                    Txt_Js_Btn.text = "开 始";
-                }
-            }
-            App.Instance.NetWorkCanDo = false;
             isPlay = false;
-            cameraTexture.Pause();
-            getTexture2d();
+            //cameraTexture.Pause();
+            Add();
         }
     }
-    void getTexture2d()
+    void Add()
     {
         //新建一个model
         System.DateTime dt = System.DateTime.Now;
@@ -205,7 +180,7 @@ public class UI_Camera : UI_Base
         wj_photo.PhotoPath = wj_photo.PhotoID + ".jpg";
         wj_photo.PhotoMiniPath = wj_photo.PhotoPath;
         wj_photo.AtTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
-
+        #region 保存图片
         //图片翻转180度
         snap = new Texture2D(width, height);
         Color[] cSource = cameraTexture.GetPixels();
@@ -218,7 +193,6 @@ public class UI_Camera : UI_Base
         }
         snap.SetPixels(cRes);
         snap.Apply(false);
-
         //===生成大图
         byte[] pngData = snap.EncodeToJPG(50);
         File.WriteAllBytes(App.Instance.Data.ImgPath + wj_photo.PhotoPath, pngData);
@@ -226,10 +200,10 @@ public class UI_Camera : UI_Base
         TextureScale.Bilinear(snap, 100, 100);
         pngData = snap.EncodeToJPG(40);
         File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
+        #endregion
         //===修改xml
         if (App.Instance.Data.Add(wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
-        {
-            JsState = 0;
+        {//完成一车
             PlayStartTime = -10000;
             Txt_Total.text = App.Instance.Data.Set.Total.ToString();
             Txt_Total.gameObject.SetActive(true);
@@ -237,9 +211,7 @@ public class UI_Camera : UI_Base
             Destroy(Img_Camera.texture);
         }
         else
-        {
-            JsState = 1;
-            JsStartTime = dt;
+        {//第一次抓拍
             PlayStartTime = Time.time;
             Txt_Total.gameObject.SetActive(false);
             Img_Camera.gameObject.SetActive(true);
@@ -248,7 +220,6 @@ public class UI_Camera : UI_Base
         TipsManager.Instance.Info("添加成功！");
         cameraTexture.Play();
         isPlay = true;
-        App.Instance.NetWorkCanDo = true;
     }
     public void Btn_Capture_Click2()
     {
@@ -260,26 +231,22 @@ public class UI_Camera : UI_Base
                 return;
             }
 
-            if (JsState == 0)
+            if (JS_Last_Record.IsBegin)
             {
-                JsState = 1;
                 Txt_JS_Time.text = "00:00:00";
-                JsStartTime = System.DateTime.Now;
                 Txt_Js_Btn.text = "结 束";
             }
             else
             {
-                JsState = 0;
-
                 Txt_Js_Btn.text = "开 始";
             }
 
             isPlay = false;
-            cameraTexture.Pause();
-            getTexture2d2();
+            //cameraTexture.Pause();
+            JSAdd();
         }
     }
-    void getTexture2d2()
+    void JSAdd()
     {
         //新建一个model
         System.DateTime dt = System.DateTime.Now;
@@ -291,7 +258,7 @@ public class UI_Camera : UI_Base
         wj_photo.PhotoPath = wj_photo.PhotoID + ".jpg";
         wj_photo.PhotoMiniPath = wj_photo.PhotoPath;
         wj_photo.AtTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
-
+        #region 生成图片
         //图片翻转180度
         snap = new Texture2D(width, height);
         Color[] cSource = cameraTexture.GetPixels();
@@ -312,10 +279,10 @@ public class UI_Camera : UI_Base
         TextureScale.Bilinear(snap, 100, 100);
         pngData = snap.EncodeToJPG(40);
         File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
+        #endregion
         //===修改xml
-        if (App.Instance.Data.Add2(wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
+        if (App.Instance.Data.Add_JS(wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
         {
-            JsState = 0;
             PlayStartTime = -10000;
             Txt_Total.text = App.Instance.Data.Set.Total.ToString();
             Txt_Total.gameObject.SetActive(true);
@@ -324,8 +291,6 @@ public class UI_Camera : UI_Base
         }
         else
         {
-            JsState = 1;
-            JsStartTime = dt;
             PlayStartTime = Time.time;
             Txt_Total.gameObject.SetActive(false);
             Img_Camera.gameObject.SetActive(true);
@@ -447,13 +412,12 @@ public class UI_Camera : UI_Base
         }
         if (App.Instance.Data.Set.RunType == 1)
         {//计时 
-            if (JsState == 1)
+            if (JS_Last_Record.IsBegin)
             {
-                ts = System.DateTime.Now - JsStartTime;
+                ts = System.DateTime.Now - JS_Last_Record.StartTime;
                 if (ts.TotalSeconds >= App.Instance.Data.Set.JSCD)
                 {//自动结束
                     Btn_Capture_Click();
-                    JsState = 0;
                 }
                 else
                 {

@@ -18,4 +18,9 @@ public class WJ_Record
     public float longitude;
     public float Latitude;
     public int Mode;
+
+
+    //=================
+    public System.DateTime BeginTime_T;
+    public System.DateTime EndTime_T;
 }

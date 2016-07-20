@@ -51,7 +51,6 @@ public class App : MonoBehaviour
         DataServer.Init();
         UI_Manager.Instance.Show("UI_Camera");
     }
-
     void LateUpdate()
     {
         if (NetCanRun == 2)
@@ -68,7 +67,6 @@ public class App : MonoBehaviour
         Data.DelData();
     }
 
-
     public void messgae(string str)
     {
         Debug.Log("messgae: " + str);
@@ -77,7 +75,6 @@ public class App : MonoBehaviour
             InputEvent();
         }
     }
-
     #region 退出
     void OnApplicationQuit()
     {

@@ -25,6 +25,7 @@ public class MainClient
     private float heart_state = -1;
     public bool RttChange = false;
     public double Rtt;
+    public NetworkStream NetStream;
     public void Init()
     {
         if (string.IsNullOrEmpty(App.Instance.Data.Set.DataServer) || string.IsNullOrEmpty(App.Instance.Data.Set.DataPort))
@@ -48,9 +49,10 @@ public class MainClient
             return;
         }
         Debug.Log("==连接成功==");
+        NetStream = client.GetStream();
         State = ClientStat.Conn;
         recieveData = new byte[ReceiveBufferSize];
-        client.GetStream().BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, client.GetStream());//在start里面开始异步接收消息
+        NetStream.BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, NetStream);//在start里面开始异步接收消息
         RequestLogin();//请求登录 
     }
     private void ConnServer()
@@ -68,8 +70,9 @@ public class MainClient
         {
             RttChangeEvent("网络：<color=#00ff00ff>连线</color>");
         }
+        NetStream = client.GetStream();
         recieveData = new byte[ReceiveBufferSize];
-        client.GetStream().BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, client.GetStream());//在start里面开始异步接收消息
+        NetStream.BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, NetStream);//在start里面开始异步接收消息
         RequestLogin();//请求登录 
     }
     #region 登录
@@ -486,10 +489,12 @@ public class MainClient
     #region 退出
     public  void OnApplicationQuit()
     {
+        NetStream.Close();
         client.Close();
     }
     public void OnDestroy()
     {
+        NetStream.Close();
         client.Close();
     }
     #endregion
@@ -516,7 +521,8 @@ public class MainClient
         try
         {
             //Debug.Log("send:" + data.Length);
-            client.GetStream().Write(data, 0, data.Length);
+            NetStream.Write(data, 0, data.Length);
+            NetStream.Flush();
         }
         catch
         {
