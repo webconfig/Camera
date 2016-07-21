@@ -392,7 +392,6 @@ public class AppData
                 {//是当天记录
                     SubmitDataNew = SubmitDatas.Last();
                     SubmitDatas.RemoveAt(SubmitDatas.Count - 1);
-                    SubmitDataNew.Remove = false;
                 }
 
             }
@@ -401,13 +400,11 @@ public class AppData
         {
             string NowDataXmlPath = string.Format("{0}{1}.xml", SubmitDataXmlPath, System.DateTime.Now.ToString("yyyy-MM-dd"));
             SubmitDataNew = NewSubmitFile(@"<root></root>", NowDataXmlPath);
-            SubmitDataNew.Remove = false;
         }
     }
     private RecordXmlData NewSubmitFile(string xml,string fullpath)
     {
         RecordXmlData data_item = new RecordXmlData();
-        data_item.Remove = true;
         data_item.RequestDatas = new RecordRequest();
         data_item.XmlPath = fullpath;
         data_item.Xml = new XmlDocument();
@@ -528,7 +525,6 @@ public class AppData
                 //新的上传文件
                 string NowSubmitXmlPath = string.Format("{0}{1}.xml", SubmitDataXmlPath, file_name);
                 RecordXmlData newdata = SubmitDataNew.Copy();
-                newdata.Remove = true;
                 SubmitDatas.Add(newdata);
                 NewSubmitFile(file_name, NowSubmitXmlPath);
             }
@@ -650,7 +646,7 @@ public class AppData
             for (int i = local_nodes.Count - 1; i >= 0; i--)
             {
                 local_node = local_nodes[i];
-                if (string.Equals(local_node.Attributes["SeqID"], last_record.SeqID))
+                if (string.Equals(local_node.Attributes["SeqID"].InnerText, last_record.SeqID))
                 {
                     local_node.Attributes["EndPhotoID"].Value = last_record.EndPhotoID;
                     local_node.Attributes["EndTime"].Value = last_record.EndTime;
@@ -666,7 +662,7 @@ public class AppData
             for (int i = submit_nodes.Count - 1; i >= 0; i--)
             {
                 submit_node = submit_nodes[i];
-                if (string.Equals(submit_node.Attributes["SeqID"], last_record.SeqID))
+                if (string.Equals(submit_node.Attributes["SeqID"].InnerText, last_record.SeqID))
                 {
                     submit_node.Attributes["EndPhotoID"].Value = last_record.EndPhotoID;
                     submit_node.Attributes["EndTime"].Value = last_record.EndTime;
@@ -675,19 +671,18 @@ public class AppData
             }
             SubmitDataNew.Xml.Save(SubmitDataNew.XmlPath);//保存到硬盘
             //添加到上传队列
-            WJ_Record wj_record = LocalData.Records.Last();
             RecordRequest.WJ_Record_Submit record = new RecordRequest.WJ_Record_Submit();
-            record.CustomerID = wj_record.CustomerID;
-            record.WJID = wj_record.WJID;
-            record.ID = wj_record.ID;
-            record.WorkSpace = wj_record.WorkSpace;
-            record.GoodsName = wj_record.GoodsName;
-            record.BeginTime = wj_record.BeginTime;
-            record.EndTime = wj_record.EndTime;
-            record.BgeinPhotoID = wj_record.BgeinPhotoID;
-            record.EndPhotoID = wj_record.EndPhotoID;
-            record.longitude = wj_record.longitude;
-            record.Latitude = wj_record.Latitude;
+            record.CustomerID = last_record.CustomerID;
+            record.WJID = last_record.WJID;
+            record.ID = last_record.ID;
+            record.WorkSpace = last_record.WorkSpace;
+            record.GoodsName = last_record.GoodsName;
+            record.BeginTime = last_record.BeginTime;
+            record.EndTime = last_record.EndTime;
+            record.BgeinPhotoID = last_record.BgeinPhotoID;
+            record.EndPhotoID = last_record.EndPhotoID;
+            record.longitude = last_record.longitude;
+            record.Latitude = last_record.Latitude;
             record.Mode = 0;
             SubmitDataNew.RequestDatas.records.Add(record);
             #endregion
@@ -743,17 +738,15 @@ public class AppData
             //新的上传文件
             string NowSubmitXmlPath = string.Format("{0}{1}.xml", SubmitDataXmlPath, file_name);
             RecordXmlData newdata = SubmitDataNew.Copy();
-            newdata.Remove = true;
             SubmitDatas.Add(newdata);
             NewSubmitFile(file_name, NowSubmitXmlPath);
         }
         #endregion
 
-        WJ_Record last_record=null;
-        if(LocalData.Records_JS.Count>0){last_record=LocalData.Records_JS.Last();}
-        if (last_record==null||!string.IsNullOrEmpty(last_record.EndPhotoID))
+        WJ_Record last_record = null;
+        if (App.Instance.Data.LocalData.Records_JS.Count > 0) { last_record = App.Instance.Data.LocalData.Records_JS.Last(); }
+        if (last_record == null || !string.IsNullOrEmpty(last_record.EndPhotoID))
         {//新纪录
-
             #region 添加本地记录
             LocalData.Photos.Add(wj_photo.PhotoID, wj_photo);//图片集合
             WJ_Record wj_record = new WJ_Record();
@@ -764,6 +757,8 @@ public class AppData
             wj_record.WorkSpace = App.Instance.Data.Set.Place;
             wj_record.GoodsName = GoodsName;
             wj_record.BgeinPhotoID = wj_photo.PhotoID;
+            wj_record.Time_T = dt;
+            wj_record.BeginTime_T = dt;
             wj_record.BeginTime = wj_photo.AtTime;
             wj_record.EndPhotoID = "";
             wj_record.EndTime = "";
@@ -845,6 +840,8 @@ public class AppData
                 NewXml();
             }
             #endregion
+
+            return true;
         }
         else
         {
@@ -869,7 +866,7 @@ public class AppData
             for (int i = local_nodes.Count - 1; i >= 0; i--)
             {
                 local_node = local_nodes[i];
-                if(string.Equals(local_node.Attributes["SeqID"],last_record.SeqID))
+                if (string.Equals(local_node.Attributes["SeqID"].InnerText, last_record.SeqID))
                 {
                     local_node.Attributes["EndPhotoID"].Value = last_record.EndPhotoID;
                     local_node.Attributes["EndTime"].Value = last_record.EndTime;
@@ -885,7 +882,7 @@ public class AppData
             for (int i = submit_nodes.Count - 1; i >= 0; i--)
             {
                 submit_node = submit_nodes[i];
-                if (string.Equals(submit_node.Attributes["SeqID"], last_record.SeqID))
+                if (string.Equals(submit_node.Attributes["SeqID"].InnerText, last_record.SeqID))
                 {
                     submit_node.Attributes["EndPhotoID"].Value = last_record.EndPhotoID;
                     submit_node.Attributes["EndTime"].Value = last_record.EndTime;
@@ -894,20 +891,19 @@ public class AppData
             }
             SubmitDataNew.Xml.Save(SubmitDataNew.XmlPath);//保存到硬盘
             //添加到上传队列
-            WJ_Record wj_record = LocalData.Records.Last();
             RecordRequest.WJ_Record_Submit record = new RecordRequest.WJ_Record_Submit();
-            record.CustomerID = wj_record.CustomerID;
-            record.WJID = wj_record.WJID;
-            record.ID = wj_record.ID;
-            record.WorkSpace = wj_record.WorkSpace;
-            record.GoodsName = wj_record.GoodsName;
-            record.BeginTime = wj_record.BeginTime;
-            record.EndTime = wj_record.EndTime;
-            record.BgeinPhotoID = wj_record.BgeinPhotoID;
-            record.EndPhotoID = wj_record.EndPhotoID;
-            record.longitude = wj_record.longitude;
-            record.Latitude = wj_record.Latitude;
-            record.Mode = 0;
+            record.CustomerID = last_record.CustomerID;
+            record.WJID = last_record.WJID;
+            record.ID = last_record.ID;
+            record.WorkSpace = last_record.WorkSpace;
+            record.GoodsName = last_record.GoodsName;
+            record.BeginTime = last_record.BeginTime;
+            record.EndTime = last_record.EndTime;
+            record.BgeinPhotoID = last_record.BgeinPhotoID;
+            record.EndPhotoID = last_record.EndPhotoID;
+            record.longitude = last_record.longitude;
+            record.Latitude = last_record.Latitude;
+            record.Mode = 1;
             SubmitDataNew.RequestDatas.records.Add(record);
             #endregion
 
@@ -938,17 +934,13 @@ public class AppData
             }
             #endregion
 
-            //LocalCount += 1;
-            //Set.Total += 1;
-            //SaveTotal();
-            //OnValueChange();
+            return false;
         }
-        return false;
     }
     public void SaveJs()
     {
         System.DateTime dt = System.DateTime.Now;
-        WJ_Record last_record = last_record = LocalData.Records_JS.Last();
+        WJ_Record last_record  = LocalData.Records_JS.Last();
         if (!string.IsNullOrEmpty(last_record.EndPhotoID)) { return; }
         #region 修改本地记录
         //修改record
@@ -959,9 +951,8 @@ public class AppData
         for (int i = local_nodes.Count - 1; i >= 0; i--)
         {
             local_node = local_nodes[i];
-            if (string.Equals(local_node.Attributes["SeqID"], last_record.SeqID))
+            if (string.Equals(local_node.Attributes["SeqID"].InnerText, last_record.SeqID))
             {
-                local_node.Attributes["EndPhotoID"].Value = last_record.EndPhotoID;
                 local_node.Attributes["EndTime"].Value = last_record.EndTime;
                 break;
             }
@@ -974,7 +965,7 @@ public class AppData
         for (int i = submit_nodes.Count - 1; i >= 0; i--)
         {
             submit_node = submit_nodes[i];
-            if (string.Equals(submit_node.Attributes["SeqID"], last_record.SeqID))
+            if (string.Equals(submit_node.Attributes["SeqID"].InnerText, last_record.SeqID))
             {
                 submit_node.Attributes["EndTime"].Value = last_record.EndTime;
                 break;
@@ -983,20 +974,19 @@ public class AppData
         SubmitDataNew.Xml.Save(SubmitDataNew.XmlPath);//保存到硬盘
         #endregion
         #region 添加到上传队列
-        WJ_Record wj_record = LocalData.Records.Last();
         RecordRequest.WJ_Record_Submit record = new RecordRequest.WJ_Record_Submit();
-        record.CustomerID = wj_record.CustomerID;
-        record.WJID = wj_record.WJID;
-        record.ID = wj_record.ID;
-        record.WorkSpace = wj_record.WorkSpace;
-        record.GoodsName = wj_record.GoodsName;
-        record.BeginTime = wj_record.BeginTime;
-        record.EndTime = wj_record.EndTime;
-        record.BgeinPhotoID = wj_record.BgeinPhotoID;
-        record.EndPhotoID = wj_record.EndPhotoID;
-        record.longitude = wj_record.longitude;
-        record.Latitude = wj_record.Latitude;
-        record.Mode = 0;
+        record.CustomerID = last_record.CustomerID;
+        record.WJID = last_record.WJID;
+        record.ID = last_record.ID;
+        record.WorkSpace = last_record.WorkSpace;
+        record.GoodsName = last_record.GoodsName;
+        record.BeginTime = last_record.BeginTime;
+        record.EndTime = last_record.EndTime;
+        record.BgeinPhotoID = last_record.BgeinPhotoID;
+        record.EndPhotoID = last_record.EndPhotoID;
+        record.longitude = last_record.longitude;
+        record.Latitude = last_record.Latitude;
+        record.Mode = 1;
         SubmitDataNew.RequestDatas.records.Add(record);
         #endregion
     }

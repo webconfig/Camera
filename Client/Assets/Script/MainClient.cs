@@ -21,8 +21,6 @@ public class MainClient
     public float ReLoginStartTime, ReLoginCD = 5;
     public float SendFileStartTime, SendFileCD=5,SendFileTimeOut = 15;
     public float LoginStartTime = 0, LoginTimeOut = 10;
-    private float heart_start_time = 0,heart_cd=1,heart_timeout=5;
-    private float heart_state = -1;
     public bool RttChange = false;
     public double Rtt;
     public NetworkStream NetStream;
@@ -50,8 +48,6 @@ public class MainClient
         }
         Debug.Log("==连接成功==");
         NetStream = client.GetStream();
-        NetStream.ReadTimeout = 20;
-        NetStream.WriteTimeout = 20;
         State = ClientStat.Conn;
         recieveData = new byte[ReceiveBufferSize];
         NetStream.BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, NetStream);//在start里面开始异步接收消息
@@ -438,8 +434,8 @@ public class MainClient
                         App.Instance.Data.AddGoods(GoodsResponseModel);
                     }
                     catch { }
-                    heart_state = 0;
-                    GotoSendData();
+                    //heart_state = 0;
+                    State = ClientStat.SendDataInit;
                 }
                 else if (tp == 3)
                 {//返回Record
@@ -451,7 +447,7 @@ public class MainClient
                         App.Instance.Data.AddSubmitRespinse(RecordResponseModel);
                     }
                     catch { }
-                    GotoSendData();
+                    State = ClientStat.SendDataInit;
                 }
                 else if (tp == 11)
                 {//开始发送文件
@@ -481,12 +477,18 @@ public class MainClient
     #region 退出
     public  void OnApplicationQuit()
     {
-        NetStream.Close();
+        if (NetStream != null)
+        {
+            NetStream.Close();
+        }
         client.Close();
     }
     public void OnDestroy()
     {
-        NetStream.Close();
+        if (NetStream != null)
+        {
+            NetStream.Close();
+        }
         client.Close();
     }
     #endregion

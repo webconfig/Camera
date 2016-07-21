@@ -22,6 +22,8 @@ public class WJ_Record
 
 
     //=================
+    public float time;
+    public System.DateTime Time_T;
     public System.DateTime BeginTime_T;
     public System.DateTime EndTime_T;
 }
