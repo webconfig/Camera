@@ -2,6 +2,7 @@
 [System.Serializable]
 public class WJ_Record
 {
+    public string SeqID;
     public long CustomerID;
     public string WJID;
 

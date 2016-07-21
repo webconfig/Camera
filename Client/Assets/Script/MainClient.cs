@@ -50,10 +50,11 @@ public class MainClient
         }
         Debug.Log("==连接成功==");
         NetStream = client.GetStream();
+        NetStream.ReadTimeout = 20;
+        NetStream.WriteTimeout = 20;
         State = ClientStat.Conn;
         recieveData = new byte[ReceiveBufferSize];
         NetStream.BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, NetStream);//在start里面开始异步接收消息
-        RequestLogin();//请求登录 
     }
     private void ConnServer()
     {
@@ -72,6 +73,8 @@ public class MainClient
         }
         NetStream = client.GetStream();
         recieveData = new byte[ReceiveBufferSize];
+        NetStream.ReadTimeout = 20;
+        NetStream.WriteTimeout = 20;
         NetStream.BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, NetStream);//在start里面开始异步接收消息
         RequestLogin();//请求登录 
     }
@@ -97,23 +100,6 @@ public class MainClient
         LoginStartTime = Time.time;
         Send<LoginRequest>(1, LoginModel);
     }
-    /// <summary>
-    /// 处理登录结果
-    /// </summary>
-    public void LoginBack()
-    {
-        if (LoginResult == 1)
-        {//成功
-            TipsManager.Instance.Info("登录成功");
-            GotoSend();
-            RequestGoods();//请求物品
-        }
-        else
-        {
-            TipsManager.Instance.Error("用户ID或者用户密码错误");
-            State = ClientStat.LoginFail;
-        }
-    }
 
     public void ReLogin()
     {
@@ -131,15 +117,7 @@ public class MainClient
         request.CustomerID = App.Instance.Data.Set.CustomerID;
         Send<GoodsRequest>(2, request);
     }
-    public void GotoSendData()
-    {
-        State = ClientStat.SendDataInit;
-    }
-    public void GotoSend()
-    {
-        State = ClientStat.Sending;
-        SendStartTime = Time.time;
-    }
+
     public void GotoConnFail()
     {
         State = ClientStat.ConnFail;
@@ -150,7 +128,7 @@ public class MainClient
     {
         switch (State)
         {
-            case ClientStat.ConnFail:
+            case ClientStat.ConnFail://连接失败
                 #region ConnFail
                 if (Application.internetReachability == NetworkReachability.NotReachable)
                 {
@@ -164,21 +142,35 @@ public class MainClient
                 }
                 #endregion
                 break;
+            case ClientStat.Conn://连接成功
+                RequestLogin();//请求登录 
+                break;
+            case ClientStat.Logining://登陆中
+                if (Time.time - LoginStartTime >= LoginTimeOut)
+                {//超时
+                    GotoConnFail();
+                }
+                break;
+            case ClientStat.LoginBack://登陆返回结果
+                if (LoginResult == 1)
+                {//成功
+                    TipsManager.Instance.Info("登录成功");
+                    State = ClientStat.Sending;
+                    SendStartTime = Time.time;
+                    RequestGoods();//请求物品
+                }
+                else
+                {
+                    TipsManager.Instance.Error("用户ID或者用户密码错误");
+                    State = ClientStat.LoginFail;
+                }
+                break;
             case ClientStat.ReLogin:
                 if (Time.time - ReLoginStartTime >= ReLoginCD)
                 {
                     CloseFile();
                     RequestLogin();
                 }
-                break;
-            case ClientStat.Logining:
-                if (Time.time - LoginStartTime>=LoginTimeOut)
-                {//超时
-                    GotoConnFail();
-                }
-                break;
-            case ClientStat.LoginBack:
-                LoginBack();
                 break;
             case ClientStat.SendDataInit:
                 SendDataStartTime = Time.time;
@@ -192,7 +184,7 @@ public class MainClient
                     SendDataStartTime = Time.time;
                     AddStr("发送数据记录" + App.Instance.Data.SubmitDatas[0].RequestDatas.records.Count+"条");
                     RecordRequest data = App.Instance.Data.SubmitDatas[0].RequestDatas;
-                    GotoSend();
+                    State = ClientStat.SendDataInit;
                     Send<RecordRequest>(4, data);
                 }
                 else if (App.Instance.Data.SubmitDataNew.RequestDatas.records.Count > 0)
@@ -200,7 +192,7 @@ public class MainClient
                     if (Time.time - SendDataStartTime < SendDataCD) { return; }
                     SendDataStartTime = Time.time;
                     AddStr("发送数据记录" + App.Instance.Data.SubmitDataNew.RequestDatas.records.Count + "条");
-                    GotoSend();
+                    State = ClientStat.SendDataInit;
                     Send<RecordRequest>(4, App.Instance.Data.SubmitDataNew.RequestDatas);
                 }
                 else
@@ -219,7 +211,7 @@ public class MainClient
                             SendFileStartTime = Time.time;
                             if (!SelectFile())
                             {
-                                GotoSendData();//没有发送的文件，跳转到发送数据
+                                State = ClientStat.SendDataInit;//没有发送的文件，跳转到发送数据
                             }
                         }
                         break;
@@ -261,7 +253,7 @@ public class MainClient
                         AddStr("完成文件：" + CurrentFile.PhotoPath);
                         CloseFile();//关闭文件
                         App.Instance.Data.DelectSubmitItem(CurrentFile);//更新xml信息
-                        GotoSendData();//发送完成，去发送数据
+                        State = ClientStat.SendDataInit;//发送完成，去发送数据
                         break;
                 }
                 #endregion
@@ -274,29 +266,29 @@ public class MainClient
                 }
                 break;
         }
-        if (State != ClientStat.ConnFail)
-        {
-            if (heart_state == 0)
-            {
-                if (Time.time - heart_start_time >= heart_cd)
-                {
-                    //Debug.Log("发送星跳报");
-                    Heart heart = new Heart();
-                    heart.time = System.DateTime.Now.Ticks;
-                    Send<Heart>(0, heart);
-                    heart_state = 1;
-                    heart_start_time = Time.time;
-                }
-            }
-            else if (heart_state == 1)
-            {
-                if (Time.time - heart_start_time >= heart_timeout)
-                {//超时
-                    Rtt = 10000;
-                    heart_state = 0;
-                }
-            }
-        }
+        //if (State != ClientStat.ConnFail)
+        //{
+        //    if (heart_state == 0)
+        //    {
+        //        if (Time.time - heart_start_time >= heart_cd)
+        //        {
+        //            //Debug.Log("发送星跳报");
+        //            Heart heart = new Heart();
+        //            heart.time = System.DateTime.Now.Ticks;
+        //            Send<Heart>(0, heart);
+        //            heart_state = 1;
+        //            heart_start_time = Time.time;
+        //        }
+        //    }
+        //    else if (heart_state == 1)
+        //    {
+        //        if (Time.time - heart_start_time >= heart_timeout)
+        //        {//超时
+        //            Rtt = 10000;
+        //            heart_state = 0;
+        //        }
+        //    }
+        //}
         if (RttChange)
         {
             RttChange = false;
@@ -524,8 +516,9 @@ public class MainClient
             NetStream.Write(data, 0, data.Length);
             NetStream.Flush();
         }
-        catch
+        catch(Exception ex)
         {
+            Debug.Log("发送数据错误:" + ex.ToString());
             CloseFile();
             GotoConnFail();
         }
