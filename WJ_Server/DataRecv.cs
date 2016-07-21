@@ -38,7 +38,6 @@ public class DataRecv
                 ////======测试========================
                 //response_login.Result = 1;
                 //Debug.Info("登录成功");
-
                 NetHelp.Send<LoginResponse>(1, response_login, context);
                 break;
             case 2://获取Goods
@@ -74,12 +73,15 @@ public class DataRecv
                 RecordResponse response_record = new RecordResponse();
                 RecordRequest.WJ_Record_Submit up_model;
 
-                List<WJ_Record_Submit> RecordSubmits = new List<WJ_Record_Submit>();
-                List<WJ_Record> Records = new List<WJ_Record>();
                 for (int i = 0; i < request_record.records.Count; i++)
                 {
                     up_model = request_record.records[i];
-                    RecordSubmits.Add(new WJ_Record_Submit
+                    System.DateTime? EndTime = null;
+                    if(!string.IsNullOrEmpty(up_model.EndTime))
+                    {
+                        EndTime = Convert.ToDateTime(up_model.EndTime);
+                    }
+                    WJ_Record_Submit record_submit = new WJ_Record_Submit
                     {
                         CustomerID = up_model.CustomerID,
                         WJID = up_model.WJID,
@@ -87,59 +89,72 @@ public class DataRecv
                         WorkSpace = up_model.WorkSpace,
                         GoodsName = up_model.GoodsName,
                         BeginTime = Convert.ToDateTime(up_model.BeginTime),
-                        EndTime = Convert.ToDateTime(up_model.EndTime),
+                        EndTime = EndTime,
                         BeginPhotoID = up_model.BgeinPhotoID,
                         EndPhotoID = up_model.EndPhotoID,
                         longitude = up_model.longitude,
                         Latitude = up_model.Latitude,
                         Mode = up_model.Mode
-                    });
-                    Records.Add(new WJ_Record
+                    };
+                    ////===测试===
+                    //response_record.records.Add(request_record.records[i].ID);
+
+                    //===数据库
+                    Db.Context.Insert<WJ_Record_Submit>(record_submit);
+
+                    var where_record = new Where<WJ_Record>();
+                    where_record.And(d => d.CustomerID.Equals(up_model.CustomerID));
+                    where_record.And(d => d.WJID.Equals(up_model.WJID));
+                    where_record.And(d => d.ID.Equals(up_model.ID));
+                    var model_record = Db.Context.From<WJ_Record>().Where(where_record).First();
+                    int num = 0;
+                    if (model_record == null)
                     {
-                        CustomerID = up_model.CustomerID,
-                        WJID = up_model.WJID,
-                        ID = up_model.ID,
-                        WorkSpace = up_model.WorkSpace,
-                        GoodsName = up_model.GoodsName,
-                        BeginTime = Convert.ToDateTime(up_model.BeginTime),
-                        EndTime = Convert.ToDateTime(up_model.EndTime),
-                        BeginPhotoID = up_model.BgeinPhotoID,
-                        EndPhotoID = up_model.EndPhotoID,
-                        longitude = up_model.longitude,
-                        Latitude = up_model.Latitude,
-                        Mode = up_model.Mode
-                    });
-                    response_record.records.Add(request_record.records[i].ID);
+                        WJ_Record record = new WJ_Record
+                        {
+                            CustomerID = up_model.CustomerID,
+                            WJID = up_model.WJID,
+                            ID = up_model.ID,
+                            WorkSpace = up_model.WorkSpace,
+                            GoodsName = up_model.GoodsName,
+                            BeginTime = Convert.ToDateTime(up_model.BeginTime),
+                            EndTime = EndTime,
+                            BeginPhotoID = up_model.BgeinPhotoID,
+                            EndPhotoID = up_model.EndPhotoID,
+                            longitude = up_model.longitude,
+                            Latitude = up_model.Latitude,
+                            Mode = up_model.Mode
+                        };
+                        num = Db.Context.Insert<WJ_Record>(record);
+                        if (num == 1)
+                        {
+                            Debug.Info("添加Record：" + up_model.ID + "成功");
+                        }
+                        else
+                        {
+                            Debug.Info("添加Record：" + up_model.ID + "失败");
+                        }
+                    }
+                    else
+                    {
+                        model_record.EndPhotoID = up_model.EndPhotoID;
+                        model_record.EndTime = EndTime;
+                        num = Db.Context.Update<WJ_Record>(model_record);
+                        if (num == 1)
+                        {
+                            Debug.Info("修改Record：" + model_record.ID + "成功");
+                        }
+                        else
+                        {
+                            Debug.Info("修改Record：" + model_record.ID + "失败");
+                        }
+                    }
+                    if (num == 1)
+                    {
+                        response_record.records.Add(request_record.records[i].ID);
+                    }
                 }
-                bool ok = true;
-                //=====数据库
-                var trans = Db.Context.BeginTransaction();
-                try
-                {
-                    trans.Insert<WJ_Record_Submit>(RecordSubmits);
-                    trans.Insert<WJ_Record>(Records);
-                    trans.Commit();
-                }
-                catch (Exception)
-                {
-                    Debug.Error("存储Record==:" + response_record.records.Count);
-                    trans.Rollback();
-                    ok = false;
-                }
-                finally
-                {
-                    trans.Close();
-                }
-                if (ok)
-                {
-                    Debug.Info("成功存储Record==:" + response_record.records.Count);
-                    NetHelp.Send<RecordResponse>(3, response_record, context);
-                }
-                else
-                {
-                    response_record.records.Clear();
-                    NetHelp.Send<RecordResponse>(3, response_record, context);
-                }
+                NetHelp.Send<RecordResponse>(3, response_record, context);
                 break;
         }
     }

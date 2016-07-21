@@ -66,11 +66,11 @@ public class FileRecv
                     fs = null;
                 }
                 //=====写入数据库=====
-                var where = new Where<WJ_Photo_Submit>();
+                var where = new Where<WJ_Photo>();
                 where.And(d => d.CustomerID.Equals(request_over.CustomerID));
                 where.And(d => d.WJID.Equals(request_over.WJID));
                 where.And(d => d.PhotoID.Equals(request_over.PhotoID));
-                WJ_Photo_Submit model = Db.Context.From<WJ_Photo_Submit>().Where(where).First();
+                WJ_Photo model = Db.Context.From<WJ_Photo>().Where(where).First();
                 if (model != null)
                 {
                     Debug.Info(string.Format("===WJ_Photo_Submit 已经存在数据：{0}---{1}---{2}",

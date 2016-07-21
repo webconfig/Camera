@@ -27,7 +27,7 @@ namespace Dos.Model
         private string _WorkSpace;
         private string _GoodsName;
         private DateTime _BeginTime;
-        private DateTime _EndTime;
+        private DateTime? _EndTime;
         private string _BeginPhotoID;
         private string _EndPhotoID;
         private float _longitude;
@@ -118,7 +118,7 @@ namespace Dos.Model
         /// 结束时间
         /// </summary>
         [Field("EndTime")]
-        public DateTime EndTime
+        public DateTime? EndTime
         {
             get { return _EndTime; }
             set

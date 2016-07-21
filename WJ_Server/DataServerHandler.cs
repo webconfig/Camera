@@ -31,15 +31,15 @@ public class DataServerHandler : ChannelHandlerAdapter
         byte[] lenByte = new byte[4];
         System.Array.Copy(data, lenByte, 4);
         int tp = NetHelp.BytesToInt(lenByte, 0);
-        Debug.Info(context.Channel.Id + "--处理请求:" + tp);
-        if(tp==0)
-        {
-            Heart request_heart;
-            NetHelp.RecvData<Heart>(data, out request_heart);
-            Debug.Info(context.Channel.Id + "--心跳数据:" + request_heart.time);
-            NetHelp.Send<Heart>(0, request_heart, context);
-        }
-        else if (tp < 10)
+        //Debug.Info(context.Channel.Id + "--处理请求:" + tp);
+        //if(tp==0)
+        //{
+        //    Heart request_heart;
+        //    NetHelp.RecvData<Heart>(data, out request_heart);
+        //    Debug.Info(context.Channel.Id + "--心跳数据:" + request_heart.time);
+        //    NetHelp.Send<Heart>(0, request_heart, context);
+        //}
+        if (tp < 10)
         {//传输数据
             DataServer.Action(tp, data, context);
         }
@@ -58,25 +58,5 @@ public class DataServerHandler : ChannelHandlerAdapter
     {
         Debug.Error(context.Channel.Id + "--" + exception.ToString());
         context.CloseAsync();
-    }
-
-    public override void UserEventTriggered(IChannelHandlerContext context, object evt)
-    {
-        if (evt is IdleStateEvent)
-        {
-            IdleStateEvent idle_event = (IdleStateEvent)evt;
-            switch(idle_event.State)
-            {
-                case IdleState.ReaderIdle://读超时
-                    Debug.Error(context.Channel.Id + "--读超时");
-                    break;
-                case IdleState.WriterIdle://写超时
-                    Debug.Error(context.Channel.Id + "--写超时");
-                    break;
-                case IdleState.AllIdle://都超时
-                    Debug.Error(context.Channel.Id + "--读写超时");
-                    break;
-            }
-        }
     }
 }
