@@ -38,32 +38,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>DLL\Dos.ORM.dll</HintPath>
     </Reference>
-    <Reference Include="DotNetty.Buffers, Version=0.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>DLL\DotNetty.Buffers.dll</HintPath>
-    </Reference>
-    <Reference Include="DotNetty.Codecs, Version=0.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>DLL\DotNetty.Codecs.dll</HintPath>
-    </Reference>
-    <Reference Include="DotNetty.Common, Version=0.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>DLL\DotNetty.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="DotNetty.Handlers, Version=0.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>DLL\DotNetty.Handlers.dll</HintPath>
-    </Reference>
-    <Reference Include="DotNetty.Transport, Version=0.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>DLL\DotNetty.Transport.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Practices.EnterpriseLibrary.SemanticLogging">
-      <HintPath>..\packages\EnterpriseLibrary.SemanticLogging.2.0.1406.1\lib\net45\Microsoft.Practices.EnterpriseLibrary.SemanticLogging.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="protobuf-net, Version=2.0.0.668, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>.\protobuf-net.dll</HintPath>
@@ -75,14 +49,14 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Client.cs" />
+    <Compile Include="ClientManager.cs" />
     <Compile Include="DataRecv.cs" />
-    <Compile Include="DataServerHandler.cs" />
     <Compile Include="Debug.cs" />
     <Compile Include="FileRecv.cs" />
-    <Compile Include="LengthDecoder.cs" />
-    <Compile Include="MessageDecoder.cs" />
-    <Compile Include="MessageEncoder.cs" />
+    <Compile Include="Model\Wj_Code.cs" />
     <Compile Include="Model\WJ_GoodsName.cs" />
+    <Compile Include="NetworkFactory.cs" />
     <Compile Include="proto\model.cs" />
     <Compile Include="Model\DB.cs" />
     <Compile Include="Model\WJ_Customer.cs" />
@@ -96,19 +70,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="DLL\test.bat" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
     <Content Include="DLL\Dos.ORM.dll" />
-    <Content Include="DLL\DotNetty.Buffers.dll" />
-    <Content Include="DLL\DotNetty.Codecs.dll" />
-    <Content Include="DLL\DotNetty.Common.dll" />
-    <Content Include="DLL\DotNetty.Handlers.dll" />
-    <Content Include="DLL\DotNetty.Transport.dll" />
-    <Content Include="DLL\Microsoft.Practices.EnterpriseLibrary.SemanticLogging.dll" />
-    <Content Include="DLL\Newtonsoft.Json.dll" />
     <Content Include="DLL\protobuf-net.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

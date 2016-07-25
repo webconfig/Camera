@@ -29,6 +29,13 @@ namespace google.protobuf
       get { return _Password; }
       set { _Password = value; }
     }
+    private bool _CheckCode;
+    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"CheckCode", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public bool CheckCode
+    {
+      get { return _CheckCode; }
+      set { _CheckCode = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -39,12 +46,20 @@ namespace google.protobuf
   {
     public LoginResponse() {}
     
-    private int _Result;
-    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"Result", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public int Result
+    private string _Result;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"Result", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string Result
     {
       get { return _Result; }
       set { _Result = value; }
+    }
+    private string _Url = "";
+    [global::ProtoBuf.ProtoMember(2, IsRequired = false, Name=@"Url", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string Url
+    {
+      get { return _Url; }
+      set { _Url = value; }
     }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)

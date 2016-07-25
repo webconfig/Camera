@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Text;
-using DotNetty.Buffers;
-using DotNetty.Transport.Channels;
-using System.Collections.Generic;
 using System.IO;
 using ProtoBuf;
 using google.protobuf;
+using System.Net.Sockets;
 
 public  class NetHelp
 {
     #region 工具方法
-    public static  void Send<T>(int type, T t, IChannelHandlerContext context)
+    public static  void Send<T>(int type, T t, NetworkStream _stream)
     {
         byte[] msg;
         using (MemoryStream ms = new MemoryStream())
@@ -27,10 +24,35 @@ public  class NetHelp
         Length_value.CopyTo(data, 0);
         type_value.CopyTo(data, 4);
         msg.CopyTo(data, 8);
-        IByteBuffer Result = context.Allocator.Buffer();
-        //Console.WriteLine("==发送数据：" + data.Length);
-        Result.WriteBytes(data);
-        context.WriteAndFlushAsync(Result);
+
+        try
+        {
+            _stream.Write(data, 0, data.Length);
+            _stream.Flush();
+        }
+        catch (Exception ex)
+        {
+            Debug.Error("发送数据错误:" + ex.ToString());
+        }
+    }
+    public static bool Send(int type, NetworkStream _stream)
+    {
+        byte[] type_value = IntToBytes(type);
+        byte[] Length_value = IntToBytes(type_value.Length);
+        byte[] data = new byte[Length_value.Length + type_value.Length];
+        Length_value.CopyTo(data, 0);
+        type_value.CopyTo(data, 4);
+        try
+        {
+            _stream.Write(data, 0, data.Length);
+            _stream.Flush();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.Error("发送数据错误:" + ex.ToString());
+            return false;
+        }
     }
     public static void RecvData<T>(byte[] data, out T t)
     {

@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Text;
-using DotNetty.Buffers;
-using DotNetty.Transport.Channels;
-using System.Collections.Generic;
 using System.IO;
-using ProtoBuf;
 using google.protobuf;
 using Dos.Model;
 using Dos.ORM;
+using System.Net.Sockets;
 
 public class FileRecv
 {
@@ -15,7 +11,7 @@ public class FileRecv
     public System.IO.FileStream fs;
     public bool StartWrite = false;
 
-    public void Action(int tp, byte[] data, IChannelHandlerContext context)
+    public void Action(int tp, byte[] data, NetworkStream _stream)
     {
         switch (tp)
         {
@@ -25,7 +21,7 @@ public class FileRecv
 
                 //判断文件夹是否存在
                 string localpath = string.Format(@"{0}\{1}\{2}\{3}\", FilePath,
-                    request_file.CustomerID.ToString(),request_file.WJID, request_file.AtTime); 
+                    request_file.CustomerID.ToString(), request_file.AtTime,request_file.WJID); 
                 if (!System.IO.Directory.Exists(localpath))
                 {
                     System.IO.Directory.CreateDirectory(localpath);
@@ -46,7 +42,7 @@ public class FileRecv
                     respinse_file.Result = 0;
                 }
                 StartWrite = true;
-                NetHelp.Send<FileResponse>(11, respinse_file, context);
+                NetHelp.Send<FileResponse>(11, respinse_file, _stream);
                 Debug.Info("开始上传文件：" + fs.Name);
                 break;
             case 12://上传中
@@ -100,7 +96,7 @@ public class FileRecv
                 //=====================
                 FileResponse response_over = new FileResponse();
                 response_over.Result = 1;
-                NetHelp.Send<FileResponse>(12, response_over, context);
+                NetHelp.Send<FileResponse>(12, response_over, _stream);
                 break;
         }
     }

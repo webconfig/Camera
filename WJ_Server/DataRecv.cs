@@ -1,24 +1,20 @@
 ﻿using System;
-using System.Text;
-using DotNetty.Buffers;
-using DotNetty.Transport.Channels;
 using System.Collections.Generic;
-using System.IO;
-using ProtoBuf;
 using google.protobuf;
 using Dos.ORM;
 using Dos.Model;
+using System.Net.Sockets;
 
 public class DataRecv
 {
-    public void Action(int tp, byte[] data, IChannelHandlerContext context)
+    public void Action(int tp, byte[] data, NetworkStream _stream)
     {
         switch (tp)
         {
             case 1://登录
                 Debug.Info("登录");
                 LoginRequest request_login;
-                NetHelp.RecvData<LoginRequest>(data, out request_login);
+                NetHelp.RecvData(data, out request_login);
                 LoginResponse response_login = new LoginResponse();
                 //=========数据库============
                 var where = new Where<WJ_Customer>();
@@ -27,18 +23,27 @@ public class DataRecv
                 model = Db.Context.From<WJ_Customer>().Where(where).First();
                 if (model != null && string.Equals(request_login.Password, model.Password))
                 {
-                    response_login.Result = 1;
+                    if (request_login.CheckCode)
+                    {
+                        response_login.Result = WJ_Server.Program.Current.Code;
+                        response_login.Url = WJ_Server.Program.Current.Url;
+                    }
+                    else
+                    {
+                        response_login.Result = "1";
+                    }
                     Debug.Info("登录成功");
                 }
                 else
                 {
-                    response_login.Result = 0;
+                    response_login.Result = "0";
                     Debug.Info("登录失败");
                 }
-                ////======测试========================
-                //response_login.Result = 1;
+                ////====== 测试 ========================
+                //response_login.Result = "1.0";
+                //response_login.Url = "www.baidu.com";
                 //Debug.Info("登录成功");
-                NetHelp.Send<LoginResponse>(1, response_login, context);
+                NetHelp.Send(1, response_login, _stream);
                 break;
             case 2://获取Goods
                 GoodsRequest request_goods;
@@ -64,7 +69,7 @@ public class DataRecv
                 //item.GoodsID = "1";
                 //item.GoodsName = "dddd";
                 //response_goods.result.Add(item);
-                NetHelp.Send<GoodsResponse>(2, response_goods, context);
+                NetHelp.Send<GoodsResponse>(2, response_goods, _stream);
                 break;
             case 4:
                 RecordRequest request_record;
@@ -77,10 +82,19 @@ public class DataRecv
                 {
                     up_model = request_record.records[i];
                     System.DateTime? EndTime = null;
+                    int state = 1;
                     if(!string.IsNullOrEmpty(up_model.EndTime))
                     {
                         EndTime = Convert.ToDateTime(up_model.EndTime);
                     }
+                    if(!string.IsNullOrEmpty(up_model.EndPhotoID))
+                    {//有结束图片
+                        state = 2;
+                    }
+                    ////===测试===
+                    //response_record.records.Add(request_record.records[i].ID);
+
+                    //===数据库
                     WJ_Record_Submit record_submit = new WJ_Record_Submit
                     {
                         CustomerID = up_model.CustomerID,
@@ -94,12 +108,9 @@ public class DataRecv
                         EndPhotoID = up_model.EndPhotoID,
                         longitude = up_model.longitude,
                         Latitude = up_model.Latitude,
-                        Mode = up_model.Mode
+                        Mode = up_model.Mode,
+                        State = state
                     };
-                    ////===测试===
-                    //response_record.records.Add(request_record.records[i].ID);
-
-                    //===数据库
                     Db.Context.Insert<WJ_Record_Submit>(record_submit);
 
                     var where_record = new Where<WJ_Record>();
@@ -123,7 +134,8 @@ public class DataRecv
                             EndPhotoID = up_model.EndPhotoID,
                             longitude = up_model.longitude,
                             Latitude = up_model.Latitude,
-                            Mode = up_model.Mode
+                            Mode = up_model.Mode,
+                            State = state
                         };
                         num = Db.Context.Insert<WJ_Record>(record);
                         if (num == 1)
@@ -154,7 +166,7 @@ public class DataRecv
                         response_record.records.Add(request_record.records[i].ID);
                     }
                 }
-                NetHelp.Send<RecordResponse>(3, response_record, context);
+                NetHelp.Send<RecordResponse>(3, response_record, _stream);
                 break;
         }
     }
