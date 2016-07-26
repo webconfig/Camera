@@ -16,33 +16,33 @@ public class DataRecv
                 LoginRequest request_login;
                 NetHelp.RecvData(data, out request_login);
                 LoginResponse response_login = new LoginResponse();
-                //=========数据库============
-                var where = new Where<WJ_Customer>();
-                where.And(d => d.CustomerID.Equals(request_login.CustomerID));
-                WJ_Customer model;
-                model = Db.Context.From<WJ_Customer>().Where(where).First();
-                if (model != null && string.Equals(request_login.Password, model.Password))
-                {
-                    if (request_login.CheckCode)
-                    {
-                        response_login.Result = WJ_Server.Program.Current.Code;
-                        response_login.Url = WJ_Server.Program.Current.Url;
-                    }
-                    else
-                    {
-                        response_login.Result = "1";
-                    }
-                    Debug.Info("登录成功");
-                }
-                else
-                {
-                    response_login.Result = "0";
-                    Debug.Info("登录失败");
-                }
-                ////====== 测试 ========================
-                //response_login.Result = "1.0";
-                //response_login.Url = "www.baidu.com";
-                //Debug.Info("登录成功");
+                ////=========数据库============
+                //var where = new Where<WJ_Customer>();
+                //where.And(d => d.CustomerID.Equals(request_login.CustomerID));
+                //WJ_Customer model;
+                //model = Db.Context.From<WJ_Customer>().Where(where).First();
+                //if (model != null && string.Equals(request_login.Password, model.Password))
+                //{
+                //    if (request_login.CheckCode)
+                //    {
+                //        response_login.Result = WJ_Server.Program.Current.Code;
+                //        response_login.Url = WJ_Server.Program.Current.Url;
+                //    }
+                //    else
+                //    {
+                //        response_login.Result = "1";
+                //    }
+                //    Debug.Info("登录成功");
+                //}
+                //else
+                //{
+                //    response_login.Result = "0";
+                //    Debug.Info("登录失败");
+                //}
+                //====== 测试 ========================
+                response_login.Result = "1.0";
+                response_login.Url = "www.baidu.com";
+                Debug.Info("登录成功");
                 NetHelp.Send(1, response_login, _stream);
                 break;
             case 2://获取Goods
@@ -50,25 +50,25 @@ public class DataRecv
                 NetHelp.RecvData<GoodsRequest>(data, out request_goods);
                 Debug.Info("获取Goods：" + request_goods.CustomerID);
                 GoodsResponse response_goods = new GoodsResponse();
-                //=====数据库=======
-                var where_goods = new Where<WJ_GoodsName>();
-                where_goods.And(d => d.CustomerID.Equals(request_goods.CustomerID));
-                List<WJ_GoodsName> model_customers = Db.Context.From<WJ_GoodsName>().ToList();
+                ////=====数据库=======
+                //var where_goods = new Where<WJ_GoodsName>();
+                //where_goods.And(d => d.CustomerID.Equals(request_goods.CustomerID));
+                //List<WJ_GoodsName> model_customers = Db.Context.From<WJ_GoodsName>().ToList();
 
-                WJ_GoodsName goodsitem;
-                for (int i = 0; i < model_customers.Count; i++)
-                {
-                    goodsitem = model_customers[i];
-                    GoodsResponse.WJ_Goods item = new GoodsResponse.WJ_Goods();
-                    item.GoodsID = goodsitem.GoodsCode;
-                    item.GoodsName = goodsitem.GoodsName;
-                    response_goods.result.Add(item);
-                }
-                ////===测试==============
-                //GoodsResponse.WJ_Goods item = new GoodsResponse.WJ_Goods();
-                //item.GoodsID = "1";
-                //item.GoodsName = "dddd";
-                //response_goods.result.Add(item);
+                //WJ_GoodsName goodsitem;
+                //for (int i = 0; i < model_customers.Count; i++)
+                //{
+                //    goodsitem = model_customers[i];
+                //    GoodsResponse.WJ_Goods item = new GoodsResponse.WJ_Goods();
+                //    item.GoodsID = goodsitem.GoodsCode;
+                //    item.GoodsName = goodsitem.GoodsName;
+                //    response_goods.result.Add(item);
+                //}
+                //===测试==============
+                GoodsResponse.WJ_Goods item = new GoodsResponse.WJ_Goods();
+                item.GoodsID = "1";
+                item.GoodsName = "dddd";
+                response_goods.result.Add(item);
                 NetHelp.Send<GoodsResponse>(2, response_goods, _stream);
                 break;
             case 4:
@@ -91,80 +91,80 @@ public class DataRecv
                     {//有结束图片
                         state = 2;
                     }
-                    ////===测试===
-                    //response_record.records.Add(request_record.records[i].ID);
+                    //===测试===
+                    response_record.records.Add(request_record.records[i].ID);
 
-                    //===数据库
-                    WJ_Record_Submit record_submit = new WJ_Record_Submit
-                    {
-                        CustomerID = up_model.CustomerID,
-                        WJID = up_model.WJID,
-                        ID = up_model.ID,
-                        WorkSpace = up_model.WorkSpace,
-                        GoodsName = up_model.GoodsName,
-                        BeginTime = Convert.ToDateTime(up_model.BeginTime),
-                        EndTime = EndTime,
-                        BeginPhotoID = up_model.BgeinPhotoID,
-                        EndPhotoID = up_model.EndPhotoID,
-                        longitude = up_model.longitude,
-                        Latitude = up_model.Latitude,
-                        Mode = up_model.Mode,
-                        State = state
-                    };
-                    Db.Context.Insert<WJ_Record_Submit>(record_submit);
+                    ////===数据库
+                    //WJ_Record_Submit record_submit = new WJ_Record_Submit
+                    //{
+                    //    CustomerID = up_model.CustomerID,
+                    //    WJID = up_model.WJID,
+                    //    ID = up_model.ID,
+                    //    WorkSpace = up_model.WorkSpace,
+                    //    GoodsName = up_model.GoodsName,
+                    //    BeginTime = Convert.ToDateTime(up_model.BeginTime),
+                    //    EndTime = EndTime,
+                    //    BeginPhotoID = up_model.BgeinPhotoID,
+                    //    EndPhotoID = up_model.EndPhotoID,
+                    //    longitude = up_model.longitude,
+                    //    Latitude = up_model.Latitude,
+                    //    Mode = up_model.Mode,
+                    //    State = state
+                    //};
+                    //Db.Context.Insert<WJ_Record_Submit>(record_submit);
 
-                    var where_record = new Where<WJ_Record>();
-                    where_record.And(d => d.CustomerID.Equals(up_model.CustomerID));
-                    where_record.And(d => d.WJID.Equals(up_model.WJID));
-                    where_record.And(d => d.ID.Equals(up_model.ID));
-                    var model_record = Db.Context.From<WJ_Record>().Where(where_record).First();
-                    int num = 0;
-                    if (model_record == null)
-                    {
-                        WJ_Record record = new WJ_Record
-                        {
-                            CustomerID = up_model.CustomerID,
-                            WJID = up_model.WJID,
-                            ID = up_model.ID,
-                            WorkSpace = up_model.WorkSpace,
-                            GoodsName = up_model.GoodsName,
-                            BeginTime = Convert.ToDateTime(up_model.BeginTime),
-                            EndTime = EndTime,
-                            BeginPhotoID = up_model.BgeinPhotoID,
-                            EndPhotoID = up_model.EndPhotoID,
-                            longitude = up_model.longitude,
-                            Latitude = up_model.Latitude,
-                            Mode = up_model.Mode,
-                            State = state
-                        };
-                        num = Db.Context.Insert<WJ_Record>(record);
-                        if (num == 1)
-                        {
-                            Debug.Info("添加Record：" + up_model.ID + "成功");
-                        }
-                        else
-                        {
-                            Debug.Info("添加Record：" + up_model.ID + "失败");
-                        }
-                    }
-                    else
-                    {
-                        model_record.EndPhotoID = up_model.EndPhotoID;
-                        model_record.EndTime = EndTime;
-                        num = Db.Context.Update<WJ_Record>(model_record);
-                        if (num == 1)
-                        {
-                            Debug.Info("修改Record：" + model_record.ID + "成功");
-                        }
-                        else
-                        {
-                            Debug.Info("修改Record：" + model_record.ID + "失败");
-                        }
-                    }
-                    if (num == 1)
-                    {
-                        response_record.records.Add(request_record.records[i].ID);
-                    }
+                    //var where_record = new Where<WJ_Record>();
+                    //where_record.And(d => d.CustomerID.Equals(up_model.CustomerID));
+                    //where_record.And(d => d.WJID.Equals(up_model.WJID));
+                    //where_record.And(d => d.ID.Equals(up_model.ID));
+                    //var model_record = Db.Context.From<WJ_Record>().Where(where_record).First();
+                    //int num = 0;
+                    //if (model_record == null)
+                    //{
+                    //    WJ_Record record = new WJ_Record
+                    //    {
+                    //        CustomerID = up_model.CustomerID,
+                    //        WJID = up_model.WJID,
+                    //        ID = up_model.ID,
+                    //        WorkSpace = up_model.WorkSpace,
+                    //        GoodsName = up_model.GoodsName,
+                    //        BeginTime = Convert.ToDateTime(up_model.BeginTime),
+                    //        EndTime = EndTime,
+                    //        BeginPhotoID = up_model.BgeinPhotoID,
+                    //        EndPhotoID = up_model.EndPhotoID,
+                    //        longitude = up_model.longitude,
+                    //        Latitude = up_model.Latitude,
+                    //        Mode = up_model.Mode,
+                    //        State = state
+                    //    };
+                    //    num = Db.Context.Insert<WJ_Record>(record);
+                    //    if (num == 1)
+                    //    {
+                    //        Debug.Info("添加Record：" + up_model.ID + "成功");
+                    //    }
+                    //    else
+                    //    {
+                    //        Debug.Info("添加Record：" + up_model.ID + "失败");
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    model_record.EndPhotoID = up_model.EndPhotoID;
+                    //    model_record.EndTime = EndTime;
+                    //    num = Db.Context.Update<WJ_Record>(model_record);
+                    //    if (num == 1)
+                    //    {
+                    //        Debug.Info("修改Record：" + model_record.ID + "成功");
+                    //    }
+                    //    else
+                    //    {
+                    //        Debug.Info("修改Record：" + model_record.ID + "失败");
+                    //    }
+                    //}
+                    //if (num == 1)
+                    //{
+                    //    response_record.records.Add(request_record.records[i].ID);
+                    //}
                 }
                 NetHelp.Send<RecordResponse>(3, response_record, _stream);
                 break;

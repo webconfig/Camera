@@ -1,4 +1,4 @@
-﻿using System.Timers.Timer;
+﻿using System.Timers;
 public class TimeManager
 {
     private static TimeManager Instance = new TimeManager();
@@ -9,13 +9,13 @@ public class TimeManager
 
     public TimeManager()
     {
-        System.Timers.Timer time = new System.Timers.Timer();
+        Timer time = new Timer();
         time.Elapsed += time_Elapsed;
         time.AutoReset = true;
         time.Enabled = true;
     }
 
-    void time_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+    void time_Elapsed(object sender, ElapsedEventArgs e)
     {
         if(TimeAction!=null)
         {
@@ -25,7 +25,7 @@ public class TimeManager
 
     public static TimeManager GetInstance()
     {
-        return TimeManager.Instance;
+        return Instance;
     }
 }
 public delegate void CallBack();

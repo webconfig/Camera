@@ -44,6 +44,7 @@ public  class NetHelp
         type_value.CopyTo(data, 4);
         try
         {
+            Debug.Info("发送心跳包");
             _stream.Write(data, 0, data.Length);
             _stream.Flush();
             return true;

@@ -62,37 +62,37 @@ public class FileRecv
                     fs = null;
                 }
                 //=====写入数据库=====
-                var where = new Where<WJ_Photo>();
-                where.And(d => d.CustomerID.Equals(request_over.CustomerID));
-                where.And(d => d.WJID.Equals(request_over.WJID));
-                where.And(d => d.PhotoID.Equals(request_over.PhotoID));
-                WJ_Photo model = Db.Context.From<WJ_Photo>().Where(where).First();
-                if (model != null)
-                {
-                    Debug.Info(string.Format("===WJ_Photo_Submit 已经存在数据：{0}---{1}---{2}",
-                        request_over.CustomerID, request_over.WJID, request_over.PhotoID));
-                }
-                else
-                {
-                    var model_photo_submit = new WJ_Photo_Submit
-                    {
-                        CustomerID = request_over.CustomerID,
-                        WJID = request_over.WJID,
-                        PhotoID = request_over.PhotoID,
-                        PhotoPath = request_over.PhotoPath,
-                        AtTime = Convert.ToDateTime(request_over.AtTime)
-                    };
-                    Db.Context.Insert<WJ_Photo_Submit>(model_photo_submit);
-                    var model_photo = new WJ_Photo
-                    {
-                        CustomerID = request_over.CustomerID,
-                        WJID = request_over.WJID,
-                        PhotoID = request_over.PhotoID,
-                        PhotoPath = request_over.PhotoPath,
-                        AtTime = Convert.ToDateTime(request_over.AtTime)
-                    };
-                    Db.Context.Insert<WJ_Photo>(model_photo);
-                }
+                //var where = new Where<WJ_Photo>();
+                //where.And(d => d.CustomerID.Equals(request_over.CustomerID));
+                //where.And(d => d.WJID.Equals(request_over.WJID));
+                //where.And(d => d.PhotoID.Equals(request_over.PhotoID));
+                //WJ_Photo model = Db.Context.From<WJ_Photo>().Where(where).First();
+                //if (model != null)
+                //{
+                //    Debug.Info(string.Format("===WJ_Photo_Submit 已经存在数据：{0}---{1}---{2}",
+                //        request_over.CustomerID, request_over.WJID, request_over.PhotoID));
+                //}
+                //else
+                //{
+                //    var model_photo_submit = new WJ_Photo_Submit
+                //    {
+                //        CustomerID = request_over.CustomerID,
+                //        WJID = request_over.WJID,
+                //        PhotoID = request_over.PhotoID,
+                //        PhotoPath = request_over.PhotoPath,
+                //        AtTime = Convert.ToDateTime(request_over.AtTime)
+                //    };
+                //    Db.Context.Insert<WJ_Photo_Submit>(model_photo_submit);
+                //    var model_photo = new WJ_Photo
+                //    {
+                //        CustomerID = request_over.CustomerID,
+                //        WJID = request_over.WJID,
+                //        PhotoID = request_over.PhotoID,
+                //        PhotoPath = request_over.PhotoPath,
+                //        AtTime = Convert.ToDateTime(request_over.AtTime)
+                //    };
+                //    Db.Context.Insert<WJ_Photo>(model_photo);
+                //}
                 //=====================
                 FileResponse response_over = new FileResponse();
                 response_over.Result = 1;
