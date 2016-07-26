@@ -3,7 +3,7 @@ using System.IO;
 using ProtoBuf;
 using google.protobuf;
 using System.Net.Sockets;
-
+using System.Collections.Generic;
 public  class NetHelp
 {
     #region 工具方法
@@ -56,16 +56,24 @@ public  class NetHelp
     }
     public static void RecvData<T>(byte[] data, out T t)
     {
-        byte[] DataByte = new byte[data.Length - 4];
-        System.Array.ConstrainedCopy(data, 4, DataByte, 0, DataByte.Length);
         using (MemoryStream ms = new MemoryStream())
         {
-            ms.Write(DataByte, 0, DataByte.Length);
+            ms.Write(data, 0, data.Length);
             ms.Position = 0;
             t = Serializer.Deserialize<T>(ms);
         }
     }
     public static int BytesToInt(byte[] data, int offset)
+    {
+        int num = 0;
+        for (int i = offset; i < offset + 4; i++)
+        {
+            num <<= 8;
+            num |= (data[i] & 0xff);
+        }
+        return num;
+    }
+    public static int BytesToInt(List<byte> data, int offset)
     {
         int num = 0;
         for (int i = offset; i < offset + 4; i++)
