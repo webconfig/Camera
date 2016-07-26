@@ -1,7 +1,6 @@
-﻿using SQLite4Unity3d;
-using System;
-public class WJ_Set
+﻿public class WJ_Set
 {
+    public bool CheckCode = false;
     public string WJ_Code = "";
     public string Place = "";
     public string DataServer = "";
@@ -12,4 +11,5 @@ public class WJ_Set
     public int Total = 0;
     public float CD = 3;
     public float JSCD = 600;
+    public int Day=7;
 }

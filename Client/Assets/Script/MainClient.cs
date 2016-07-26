@@ -17,9 +17,8 @@ public class MainClient
     public ClientStat State = ClientStat.ConnFail;
     public float ConnStartTime,ConnCD = 15;
     public float SendStartTime = 0, SendTimeOut=10;
-    public float SendDataStartTime,SendDataCD = 3;
     public float ReLoginStartTime, ReLoginCD = 5;
-    public float SendFileStartTime, SendFileCD=5,SendFileTimeOut = 15;
+    public float SendFileStartTime,SendFileTimeOut = 15;
     public float LoginStartTime = 0, LoginTimeOut = 10;
     public bool RttChange = false;
     public double Rtt;
@@ -56,11 +55,13 @@ public class MainClient
     {
         try
         {
-            Debug.Log("重新连接Server");
+            client = new TcpClient();
+            Debug.Log("重新连接" + App.Instance.Data.Set.DataServer + ":" + App.Instance.Data.Set.DataPort);
             client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
         }
-        catch
+        catch (Exception ex)
         {
+            Debug.Log(ex.ToString());
             return;
         }
         if (RttChangeEvent != null)
@@ -75,7 +76,7 @@ public class MainClient
         RequestLogin();//请求登录 
     }
     #region 登录
-    public int LoginResult = 0;
+    public LoginResponse LoginResult;
     /// <summary>
     /// 登陆
     /// </summary>
@@ -91,6 +92,7 @@ public class MainClient
         LoginRequest LoginModel = new LoginRequest();
         LoginModel.CustomerID = App.Instance.Data.Set.CustomerID;
         LoginModel.Password = App.Instance.Data.Set.Password;
+        LoginModel.CheckCode = App.Instance.Data.Set.CheckCode;
         Debug.Log("========登录：" + LoginModel.CustomerID + "-" + LoginModel.Password);
         State = ClientStat.Logining;
         LoginStartTime = Time.time;
@@ -117,6 +119,11 @@ public class MainClient
     public void GotoConnFail()
     {
         State = ClientStat.ConnFail;
+        if (NetStream != null)
+        {
+            NetStream.Close();
+        }
+        client.Close();
         ConnStartTime = Time.time;
     }
 
@@ -148,8 +155,17 @@ public class MainClient
                 }
                 break;
             case ClientStat.LoginBack://登陆返回结果
-                if (LoginResult == 1)
+                if (LoginResult.Result != "0")
                 {//成功
+                    if (App.Instance.Data.Set.CheckCode)
+                    {
+                        if (App.Instance.Data.Code != LoginResult.Result)
+                        {
+                            //UnityEngine.Analytics.TrackEvent("Click URL Website", "app/help/website");
+                            Application.OpenURL("http://"+LoginResult.Url);
+                        }
+                    }
+
                     TipsManager.Instance.Info("登录成功");
                     State = ClientStat.Sending;
                     SendStartTime = Time.time;
@@ -168,28 +184,24 @@ public class MainClient
                     RequestLogin();
                 }
                 break;
-            case ClientStat.SendDataInit:
-                SendDataStartTime = Time.time;
-                State = ClientStat.SendData;
-                break;
             case ClientStat.SendData:
                 #region SendData
-                if (App.Instance.Data.SubmitDatas.Count > 0)
+                if (App.Instance.Data.OldDatas.Count > 0)
                 {
-                    if (Time.time - SendDataStartTime < SendDataCD) { return; }
-                    SendDataStartTime = Time.time;
-                    AddStr("发送数据记录" + App.Instance.Data.SubmitDatas[0].RequestDatas.records.Count+"条");
-                    RecordRequest data = App.Instance.Data.SubmitDatas[0].RequestDatas;
-                    State = ClientStat.SendDataInit;
-                    Send<RecordRequest>(4, data);
+                    if(App.Instance.Data.OldDatas[0].Records_Submit.Count>0)
+                    {
+                        AddStr("发送历史数据记录1条");
+                        State = ClientStat.Sending;
+                        SendStartTime = Time.time;
+                        Send<WJ_Record>(4, App.Instance.Data.OldDatas[0].Records_Submit.Values.First());
+                    }
                 }
-                else if (App.Instance.Data.SubmitDataNew.RequestDatas.records.Count > 0)
+                else if (App.Instance.Data.CurrentData.Records_Submit.Count > 0)
                 {
-                    if (Time.time - SendDataStartTime < SendDataCD) { return; }
-                    SendDataStartTime = Time.time;
-                    AddStr("发送数据记录" + App.Instance.Data.SubmitDataNew.RequestDatas.records.Count + "条");
-                    State = ClientStat.SendDataInit;
-                    Send<RecordRequest>(4, App.Instance.Data.SubmitDataNew.RequestDatas);
+                    AddStr("发送当天数据记录1条");
+                    State = ClientStat.Sending;
+                    SendStartTime = Time.time;
+                    Send<WJ_Record>(4, App.Instance.Data.CurrentData.Records_Submit.Values.First());
                 }
                 else
                 {//没有要发送的数据后，开始发送图片
@@ -202,14 +214,17 @@ public class MainClient
                 switch (SendFileState)
                 {
                     case 0:
-                        if (Time.time - SendFileStartTime >= SendFileCD)
-                        {//发送
+
+                        if (SelectFile())
+                        {
                             SendFileStartTime = Time.time;
-                            if (!SelectFile())
-                            {
-                                State = ClientStat.SendDataInit;//没有发送的文件，跳转到发送数据
-                            }
+                            SendFileState = 1;
                         }
+                        else
+                        {
+                            State = ClientStat.SendData;//没有发送的文件，跳转到发送数据
+                        }
+
                         break;
                     case 1:
                         if (Time.time - SendFileStartTime >= SendFileTimeOut)
@@ -241,15 +256,15 @@ public class MainClient
                         else
                         {//完成
                             SendFileState = 1;
-                            Send<FileRequest>(13, CurrentFile);
+                            Send<WJ_Photo>(13, CurrentFile);
                         }
                         break;
                     case 4:
                         SendFileState = 0;
                         AddStr("完成文件：" + CurrentFile.PhotoPath);
                         CloseFile();//关闭文件
-                        App.Instance.Data.DelectSubmitItem(CurrentFile);//更新xml信息
-                        State = ClientStat.SendDataInit;//发送完成，去发送数据
+                        App.Instance.Data.PhotoSubmitOver(CurrentFile);//更新xml信息
+                        State = ClientStat.SendData;//发送完成，去发送数据
                         break;
                 }
                 #endregion
@@ -262,62 +277,39 @@ public class MainClient
                 }
                 break;
         }
-        //if (State != ClientStat.ConnFail)
+        //if (RttChange)
         //{
-        //    if (heart_state == 0)
+        //    RttChange = false;
+        //    if (App.Instance.DataServer.State != ClientStat.ConnFail)
         //    {
-        //        if (Time.time - heart_start_time >= heart_cd)
+        //        if (App.Instance.DataServer.Rtt > 1000)
         //        {
-        //            //Debug.Log("发送星跳报");
-        //            Heart heart = new Heart();
-        //            heart.time = System.DateTime.Now.Ticks;
-        //            Send<Heart>(0, heart);
-        //            heart_state = 1;
-        //            heart_start_time = Time.time;
+        //            if (RttChangeEvent != null)
+        //            {
+        //                RttChangeEvent("网络往返时间：<color=#FF0000FF>大于1000</color>");
+        //            }
         //        }
-        //    }
-        //    else if (heart_state == 1)
-        //    {
-        //        if (Time.time - heart_start_time >= heart_timeout)
-        //        {//超时
-        //            Rtt = 10000;
-        //            heart_state = 0;
+        //        else if (App.Instance.DataServer.Rtt > 150)
+        //        {
+        //            if (RttChangeEvent != null)
+        //            {
+        //                RttChangeEvent(string.Format("网络往返时间：<color=#00ff00ff>{0}</color>", App.Instance.DataServer.Rtt.ToString("f1")));
+        //            }
+        //        }
+        //        else
+        //        {
+        //            if (RttChangeEvent != null)
+        //            {
+        //                RttChangeEvent(string.Format("网络往返时间：<color=#00ff00ff>{0}</color>", App.Instance.DataServer.Rtt.ToString("f1")));
+        //            }
         //        }
         //    }
         //}
-        if (RttChange)
-        {
-            RttChange = false;
-            if (App.Instance.DataServer.State != ClientStat.ConnFail)
-            {
-                if (App.Instance.DataServer.Rtt > 1000)
-                {
-                    if (RttChangeEvent != null)
-                    {
-                        RttChangeEvent("网络往返时间：<color=#FF0000FF>大于1000</color>");
-                    }
-                }
-                else if (App.Instance.DataServer.Rtt > 150)
-                {
-                    if (RttChangeEvent != null)
-                    {
-                        RttChangeEvent(string.Format("网络往返时间：<color=#00ff00ff>{0}</color>", App.Instance.DataServer.Rtt.ToString("f1")));
-                    }
-                }
-                else
-                {
-                    if (RttChangeEvent != null)
-                    {
-                        RttChangeEvent(string.Format("网络往返时间：<color=#00ff00ff>{0}</color>", App.Instance.DataServer.Rtt.ToString("f1")));
-                    }
-                }
-            }
-        }
     }
 
     #region 传输文件
     public int SendFileState = 0;
-    public FileRequest CurrentFile;
+    public WJ_Photo_Local CurrentFile;
     private System.IO.FileStream fs;
     private long lStartPos;
     private static int BLOCK_SIZE = 1024 * 2;
@@ -334,33 +326,27 @@ public class MainClient
     /// </summary>
     public bool SelectFile()
     {
-        ImgXmlData NowImgXml = null;
         CurrentFile = null;
-        if (App.Instance.Data.UpLoadImgXmls.Count > 0)
+        if (App.Instance.Data.OldDatas.Count > 0)
         {
-            NowImgXml = App.Instance.Data.UpLoadImgXmls[0];
-            if (NowImgXml.FileRequestDatas.Count <= 0)
-            {//删除没有记录的文件
-                File.Delete(NowImgXml.XmlPath);
-                App.Instance.Data.UpLoadImgXmls.RemoveAt(0);
-            }
-            else
+            for (int i = 0; i < App.Instance.Data.OldDatas.Count; i++)
             {
-                CurrentFile = NowImgXml.FileRequestDatas.Values.First();
+                if (App.Instance.Data.OldDatas[i].PhotosSubmit.Count > 0)
+                {//删除没有记录的文件
+                    CurrentFile = App.Instance.Data.OldDatas[i].PhotosSubmit.Values.First();
+                }
             }
         }
         else
         {
-            NowImgXml = App.Instance.Data.NowImgXml;
-            if (NowImgXml.FileRequestDatas.Count > 0)
-            {
-                CurrentFile = NowImgXml.FileRequestDatas.Values.First();
+            if (App.Instance.Data.CurrentData.PhotosSubmit.Count > 0)
+            {//删除没有记录的文件
+                CurrentFile = App.Instance.Data.CurrentData.PhotosSubmit.Values.First();
             }
         }
 
         if (CurrentFile != null)
         {
-            SendFileState = 1;
             FileStartRequest request = new FileStartRequest();
             request.name = CurrentFile.PhotoPath;
             request.CustomerID = CurrentFile.CustomerID;
@@ -406,23 +392,18 @@ public class MainClient
         //==========================================================================
         if (tp == 0)
         {
-            //Debug.Log("接收星跳报");
-            Heart ResponseHeart;
-            RecvData<Heart>(DataByte, out ResponseHeart);
-            TimeSpan ts = new TimeSpan(System.DateTime.Now.Ticks - ResponseHeart.time);
-            Rtt = ts.TotalMilliseconds;
-            RttChange = true;
+            Send(0);//相应服务器的心跳包
         }
-        else if(tp==1)
+        else if (tp == 1)
         {//登陆返回结果
             LoginResponse ResponseModel;
             RecvData<LoginResponse>(DataByte, out ResponseModel);
-            LoginResult = ResponseModel.Result;
+            LoginResult = ResponseModel;
             State = ClientStat.LoginBack;
         }
         else
         {
-            if (State != ClientStat.Logining && State != ClientStat.LoginBack && State !=ClientStat.LoginFail)
+            if (State != ClientStat.Logining && State != ClientStat.LoginBack && State != ClientStat.LoginFail)
             { //登录过程中不接受其他消息
                 if (tp == 2)
                 {//Goods返回
@@ -435,19 +416,14 @@ public class MainClient
                     }
                     catch { }
                     //heart_state = 0;
-                    State = ClientStat.SendDataInit;
+                    State = ClientStat.SendData;
                 }
                 else if (tp == 3)
                 {//返回Record
-                    try
-                    {
-                        RecordResponse RecordResponseModel;
-                        RecvData<RecordResponse>(DataByte, out RecordResponseModel);
-                        Debug.Log("===Record返回结果:" + RecordResponseModel.records.Count);
-                        App.Instance.Data.AddSubmitRespinse(RecordResponseModel);
-                    }
-                    catch { }
-                    State = ClientStat.SendDataInit;
+                    RecordResponse RecordResponseModel;
+                    RecvData<RecordResponse>(DataByte, out RecordResponseModel);
+                    Debug.Log("===Record返回结果:" + RecordResponseModel.records.Count);
+                    App.Instance.Data.AddSubmitRespinse(RecordResponseModel);
                 }
                 else if (tp == 11)
                 {//开始发送文件
@@ -477,19 +453,12 @@ public class MainClient
     #region 退出
     public  void OnApplicationQuit()
     {
+        Debug.Log("OnApplicationQuit");
         if (NetStream != null)
         {
             NetStream.Close();
+            client.Close();
         }
-        client.Close();
-    }
-    public void OnDestroy()
-    {
-        if (NetStream != null)
-        {
-            NetStream.Close();
-        }
-        client.Close();
     }
     #endregion
 
@@ -516,9 +485,27 @@ public class MainClient
         {
             //Debug.Log("send:" + data.Length);
             NetStream.Write(data, 0, data.Length);
-            NetStream.Flush();
         }
         catch(Exception ex)
+        {
+            Debug.Log("发送数据错误:" + ex.ToString());
+            CloseFile();
+            GotoConnFail();
+        }
+    }
+    public void Send(int type)
+    {
+        byte[] type_value = IntToBytes(type);
+        byte[] Length_value = IntToBytes(type_value.Length);
+        //消息体结构：消息体长度+消息体
+        byte[] data = new byte[Length_value.Length + type_value.Length];
+        Length_value.CopyTo(data, 0);
+        type_value.CopyTo(data, 4);
+        try
+        {
+            NetStream.Write(data, 0, data.Length);
+        }
+        catch (Exception ex)
         {
             Debug.Log("发送数据错误:" + ex.ToString());
             CloseFile();
@@ -581,6 +568,28 @@ public class MainClient
     #endregion
 
     public event CallBack<string> RttChangeEvent;
+
+
+    public void Send1(int length)
+    {
+        byte[] data = new byte[length];
+        for (int i = 0; i < length; i++)
+        {
+            data[i] = 0;
+        }
+        try
+        {
+            //Debug.Log("send:" + data.Length);
+            NetStream.Write(data, 0, data.Length);
+            NetStream.Flush();
+        }
+        catch (Exception ex)
+        {
+            Debug.Log("发送数据错误:" + ex.ToString());
+            CloseFile();
+            GotoConnFail();
+        }
+    }
 }
 public enum ClientStat
 {
@@ -591,7 +600,6 @@ public enum ClientStat
     LoginBack,
     LoginFail,
     LoingOk,
-    SendDataInit,
     SendData,
     SendFile,
     Sending,

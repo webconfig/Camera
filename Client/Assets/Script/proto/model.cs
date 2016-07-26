@@ -29,6 +29,13 @@ namespace google.protobuf
       get { return _Password; }
       set { _Password = value; }
     }
+    private bool _CheckCode;
+    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"CheckCode", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public bool CheckCode
+    {
+      get { return _CheckCode; }
+      set { _CheckCode = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
@@ -39,12 +46,20 @@ namespace google.protobuf
   {
     public LoginResponse() {}
     
-    private int _Result;
-    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"Result", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public int Result
+    private string _Result;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"Result", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string Result
     {
       get { return _Result; }
       set { _Result = value; }
+    }
+    private string _Url = "";
+    [global::ProtoBuf.ProtoMember(2, IsRequired = false, Name=@"Url", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string Url
+    {
+      get { return _Url; }
+      set { _Url = value; }
     }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
@@ -109,22 +124,10 @@ namespace google.protobuf
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
   }
   
-  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"RecordRequest")]
-  public partial class RecordRequest : global::ProtoBuf.IExtensible
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"WJ_Record")]
+  public partial class WJ_Record : global::ProtoBuf.IExtensible
   {
-    public RecordRequest() {}
-    
-    private readonly global::System.Collections.Generic.List<google.protobuf.RecordRequest.WJ_Record_Submit> _records = new global::System.Collections.Generic.List<google.protobuf.RecordRequest.WJ_Record_Submit>();
-    [global::ProtoBuf.ProtoMember(1, Name=@"records", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public global::System.Collections.Generic.List<google.protobuf.RecordRequest.WJ_Record_Submit> records
-    {
-      get { return _records; }
-    }
-  
-  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"WJ_Record_Submit")]
-  public partial class WJ_Record_Submit : global::ProtoBuf.IExtensible
-  {
-    public WJ_Record_Submit() {}
+    public WJ_Record() {}
     
     private long _CustomerID;
     [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"CustomerID", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
@@ -215,11 +218,6 @@ namespace google.protobuf
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
   }
   
-    private global::ProtoBuf.IExtension extensionObject;
-    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
-      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
-  }
-  
   [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"RecordResponse")]
   public partial class RecordResponse : global::ProtoBuf.IExtensible
   {
@@ -275,10 +273,10 @@ namespace google.protobuf
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
   }
   
-  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"FileRequest")]
-  public partial class FileRequest : global::ProtoBuf.IExtensible
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"WJ_Photo")]
+  public partial class WJ_Photo : global::ProtoBuf.IExtensible
   {
-    public FileRequest() {}
+    public WJ_Photo() {}
     
     private long _CustomerID;
     [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"CustomerID", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
@@ -314,13 +312,6 @@ namespace google.protobuf
     {
       get { return _AtTime; }
       set { _AtTime = value; }
-    }
-    private string _SeqID;
-    [global::ProtoBuf.ProtoMember(6, IsRequired = true, Name=@"SeqID", DataFormat = global::ProtoBuf.DataFormat.Default)]
-    public string SeqID
-    {
-      get { return _SeqID; }
-      set { _SeqID = value; }
     }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)

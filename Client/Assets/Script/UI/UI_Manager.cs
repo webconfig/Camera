@@ -14,7 +14,6 @@ public class UI_Manager:MonoBehaviour
             return _instance;
         }
     }
-    public List<UI_Base> UI;
     private Dictionary<string, UI_Base> UI_Datas;
     public UI_Base Current,OldCurrent;
     public Color NormalColor1;
@@ -23,13 +22,15 @@ public class UI_Manager:MonoBehaviour
     {
         _instance = this;
         UI_Datas = new Dictionary<string, UI_Base>();
-        for (int i = 0; i < UI.Count; i++)
+        for (int i = 0; i < transform.childCount; i++)
         {
-            UI_Datas.Add(UI[i].gameObject.name, UI[i]);
+            UI_Base ub = transform.GetChild(i).GetComponent<UI_Base>();
+            if(ub!=null)
+            {
+                UI_Datas.Add(ub.gameObject.name, ub);
+            }
         }
     }
-
-
     public void Show(string name)
     {
         App.Instance.NetWorkCanDo = false;
@@ -44,7 +45,6 @@ public class UI_Manager:MonoBehaviour
         Current = UI_Datas[name];
         App.Instance.NetWorkCanDo = true;
     }
-
     public void Back()
     {
         if (Current != null)
@@ -57,7 +57,6 @@ public class UI_Manager:MonoBehaviour
         Current = OldCurrent;
         OldCurrent = null;
     }
-    
 }
 public delegate void InputCode(string str);
 

@@ -1,9 +1,4 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
-using System;
-using System.IO;
-using System.Linq;
-using System.Collections.Generic;
 using System.Collections;
 
 public class App : MonoBehaviour
@@ -80,11 +75,27 @@ public class App : MonoBehaviour
     {
         DataServer.OnApplicationQuit();
     }
-    void OnDestroy()
-    {
-        DataServer.OnDestroy();
-    }
     #endregion
+
+    //void OnGUI()
+    //{
+    //    if (GUI.Button(new Rect(10, 10, 150, 50), "send 1"))
+    //    {
+    //        DataServer.Send1(1);
+    //    }
+    //    if (GUI.Button(new Rect(10, 110, 150, 50), "send 2"))
+    //    {
+    //        DataServer.Send1(2);
+    //    }
+    //    if (GUI.Button(new Rect(10, 210, 150, 50), "send 3"))
+    //    {
+    //        DataServer.Send1(3);
+    //    }
+    //    if (GUI.Button(new Rect(10, 210, 150, 50), "send 4"))
+    //    {
+    //        DataServer.Send1(4);
+    //    }
+    //}  
 }
 public delegate void CallBack();
 public delegate void CallBack<T>(T t);
