@@ -4,9 +4,11 @@ option optimize_for = SPEED;
 message LoginRequest {
   required int64 CustomerID = 1;
   required string Password = 2;
+  required bool CheckCode = 3;
 }
 message LoginResponse {
-  required int32 Result = 1;
+  required string Result = 1;
+  optional string Url = 2;
 }
 message GoodsRequest {
   required int64 CustomerID=1;
@@ -18,8 +20,7 @@ message GoodsResponse {
   }
   repeated WJ_Goods result = 1;
 }
-message RecordRequest {
-   message WJ_Record_Submit{
+message WJ_Record {
     required int64 CustomerID=1;
     required string WJID=2;
     required int64 ID=3;
@@ -32,27 +33,29 @@ message RecordRequest {
     required float longitude=10;
     required float Latitude=11;
     required int32 Mode=12;
-   }
-  repeated WJ_Record_Submit records = 1;
 }
 message RecordResponse {
   repeated int64 records = 3;
 }
 message FileStartRequest {
   required string name = 1;
-  required int64 dir = 2;
+  required int64 CustomerID = 2;
+  required string AtTime = 3;
+  required string WJID = 4;
 }
-message FileRequest {
+message WJ_Photo {
   required int64 CustomerID = 1;
   required string WJID = 2;
   required string PhotoID = 3;
   required string PhotoPath = 4;
   required string AtTime = 5;
-  required string SeqID=6;
 }
 message FileResponse {
   required int64 Result = 1;
 }
 message FileSend {
   required bytes datas = 1;
+}
+message Heart {
+  required int64 time = 1;
 }
