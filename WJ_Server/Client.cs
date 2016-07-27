@@ -13,6 +13,7 @@ public class Client
     public DataRecv DataServer;
     public FileRecv FileServer;
     private System.DateTime ReadTime;
+    private int ReadOutIndex = 0;
 
     public Client(TcpClient client)
     {
@@ -28,7 +29,6 @@ public class Client
 
     void Client_TimeAction()
     {
-        //Debug.Info("时间到");
         //TimeSpan ts = DateTime.Now - ReadTime;
         //if(ts.TotalSeconds>20)
         //{//超过20秒没读取到数据，触发一个心跳
@@ -78,14 +78,16 @@ public class Client
     {
         ReadTime = System.DateTime.Now;
         int length = _stream.EndRead(ar);
-        if (length <= 0)
+        if (length == 0)
         {
             Debug.Error("接收数据长度：" + length);
-            if(!NetHelp.Send(0, _stream))
-            {
-                close();
-            }
+            close();
+            return;
         }
+        //if (length < 0)
+        //{
+        //    Debug.Error("接收数据长度居然小于0：" + length);
+        //}
         else
         {
             //拷贝到缓存队列
