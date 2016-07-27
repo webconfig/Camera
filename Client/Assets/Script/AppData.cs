@@ -166,7 +166,7 @@ public class AppData
         {
             string NowDataXmlPath = string.Format("{0}{1}.xml", LocalDataParentPath, System.DateTime.Now.ToString("yyyy-MM-dd"));
             //创建新记录
-            NewLocalData(NowDataXmlPath, "<root><photo></photo><record></record></root>");
+            NewLocalData(NowDataXmlPath, "<root over=''><photo></photo><record></record></root>");
         }
         #endregion
     }
@@ -278,7 +278,7 @@ public class AppData
             }
             #endregion
 
-            if(result.Photos.Count==0&&result.Records_Submit.Count==0)
+            if (result.PhotosSubmit.Count == 0 && result.Records_Submit.Count == 0)
             {//没有上传的图片
                 result.Xml.FirstChild.Attributes["over"].Value = "true";
                 if(save)
@@ -430,6 +430,11 @@ public class AppData
             System.TimeSpan ts = System.DateTime.Now.Date - StartTime;
             if (ts.Days >= 1)
             {//超过一天
+                if(CurrentData.PhotosSubmit.Count==0&&CurrentData.Records_Submit.Count==0)
+                {//没有上传的的数据
+                    CurrentData.Xml.FirstChild.Attributes["over"].Value = "true";
+                    need_save = true;
+                }
                 if(need_save)
                 {
                     CurrentData.Xml.Save(CurrentData.XmlPath);//保存到硬盘
@@ -437,7 +442,7 @@ public class AppData
                 //新的本地记录
                 string file_name = DateTime.Now.ToString("yyyy-MM-dd");
                 string NowDataXmlPath = string.Format("{0}{1}.xml", LocalDataParentPath, file_name);
-                NewLocalData(NowDataXmlPath, "<root><photo></photo><record></record></root>");
+                NewLocalData(NowDataXmlPath, "<root over=''><photo></photo><record></record></root>");
             }
             #endregion
             #region 添加本地记录
@@ -561,11 +566,19 @@ public class AppData
         TimeSpan ts = System.DateTime.Now.Date - StartTime;
         if (ts.Days >= 1)
         {//超过一天
+
+            if (CurrentData.PhotosSubmit.Count == 0 && CurrentData.Records_Submit.Count == 0)
+            {//没有上传的的数据
+                CurrentData.Xml.FirstChild.Attributes["over"].Value = "true";
+                CurrentData.Xml.Save(CurrentData.XmlPath);//存储到本地
+            }
+
+
             //新的本地记录
             StartTime = System.DateTime.Now.Date;
             string file_name = StartTime.ToString("yyyy-MM-dd");
             string NowDataXmlPath = string.Format("{0}{1}.xml", LocalDataParentPath, file_name);
-            NewLocalData(NowDataXmlPath, "<root><photo></photo><record></record></root>");
+            NewLocalData(NowDataXmlPath, "<root over=''><photo></photo><record></record></root>");
         }
         #endregion
 
@@ -823,18 +836,30 @@ public class LocalXmlData
                 k--;
             }
         }
-        if (find)
-        {
-            Xml.Save(XmlPath);
-        }
 
 
         if (Records_Submit.Count == 0 && PhotosSubmit.Count == 0)
         {
+            if(IsOld)
+            {
+                Xml.FirstChild.Attributes["over"].Value = "true";
+                Xml.Save(XmlPath);
+            }
+            else
+            {
+                if (find)
+                {
+                    Xml.Save(XmlPath);
+                }
+            }
             return true;
         }
         else
         {
+            if (find)
+            {
+                Xml.Save(XmlPath);
+            }
             return false;
         }
     }
