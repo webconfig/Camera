@@ -328,6 +328,10 @@ public class UI_Camera : UI_Base
             cRes = cameraTexture.GetPixels();
             isPlay = true;
         }
+        else
+        {
+            TipsManager.Instance.Error("没有访问摄像头的权限");
+        }
     }
     private int width,height;
     private void GoodsSelect(int value)
