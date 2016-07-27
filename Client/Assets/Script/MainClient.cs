@@ -229,6 +229,7 @@ public class MainClient
                     case 1:
                         if (Time.time - SendFileStartTime >= SendFileTimeOut)
                         {//超时
+                            AddStr("开始发送文件超时");
                             CloseFile();
                             GotoConnFail();
                         }
@@ -246,7 +247,6 @@ public class MainClient
                         SendFileState = 3;
                         break;
                     case 3://发送过程中
-                        iBytes = 0;
                         if ((iBytes = fs.Read(buffer, 0, buffer.Length)) > 0)
                         {
                             FileSend send_data = new FileSend();
@@ -272,7 +272,7 @@ public class MainClient
             case ClientStat.Sending://用于发送请求物品和发送数据的超时
                 if (Time.time - SendStartTime >= SendTimeOut)
                 {//超时
-                    Debug.Log("==超时==");
+                    AddStr("发送数据超时");
                     GotoConnFail();
                 }
                 break;
@@ -422,8 +422,14 @@ public class MainClient
                 {//返回Record
                     RecordResponse RecordResponseModel;
                     RecvData<RecordResponse>(DataByte, out RecordResponseModel);
-                    Debug.Log("===Record返回结果:" + RecordResponseModel.records.Count);
-                    App.Instance.Data.AddSubmitRespinse(RecordResponseModel);
+                    if (RecordResponseModel.record_id == -1)
+                    {
+                        AddStr("传输一个Record发生错误");
+                    }
+                    else
+                    {
+                        App.Instance.Data.AddSubmitRespinse(RecordResponseModel);
+                    }
                 }
                 else if (tp == 11)
                 {//开始发送文件
@@ -453,7 +459,6 @@ public class MainClient
     #region 退出
     public  void OnApplicationQuit()
     {
-        Debug.Log("OnApplicationQuit");
         if (NetStream != null)
         {
             NetStream.Close();
@@ -465,7 +470,6 @@ public class MainClient
     #region 工具方法
     public void Send<T>(int type,  T t)
     {
-
         byte[] msg;
         using (MemoryStream ms = new MemoryStream())
         {
@@ -483,12 +487,12 @@ public class MainClient
         msg.CopyTo(data, 8);
         try
         {
-            //Debug.Log("send:" + data.Length);
             NetStream.Write(data, 0, data.Length);
+            NetStream.Flush();
         }
-        catch(Exception ex)
+        catch
         {
-            Debug.Log("发送数据错误:" + ex.ToString());
+            AddStr("发送文件发生网络异常");
             CloseFile();
             GotoConnFail();
         }
@@ -505,9 +509,9 @@ public class MainClient
         {
             NetStream.Write(data, 0, data.Length);
         }
-        catch (Exception ex)
+        catch
         {
-            Debug.Log("发送数据错误:" + ex.ToString());
+            AddStr("发送心跳包发生网络异常");
             CloseFile();
             GotoConnFail();
         }
@@ -568,28 +572,6 @@ public class MainClient
     #endregion
 
     public event CallBack<string> RttChangeEvent;
-
-
-    public void Send1(int length)
-    {
-        byte[] data = new byte[length];
-        for (int i = 0; i < length; i++)
-        {
-            data[i] = 0;
-        }
-        try
-        {
-            //Debug.Log("send:" + data.Length);
-            NetStream.Write(data, 0, data.Length);
-            NetStream.Flush();
-        }
-        catch (Exception ex)
-        {
-            Debug.Log("发送数据错误:" + ex.ToString());
-            CloseFile();
-            GotoConnFail();
-        }
-    }
 }
 public enum ClientStat
 {

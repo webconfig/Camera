@@ -12,12 +12,12 @@ public class UI_History : UI_Base
     public override void UI_Start()
     {
         Btn_Back.onClick.AddListener(Btn_Back_Click);
-        ShowData(App.Instance.Data.LocalData);
+        ShowData(App.Instance.Data.CurrentData);
         table.ToEnd();
     }
     private void ShowData(LocalXmlData xd)
     {
-        WJ_Record model;
+        WJ_Record_Local model;
         TxtTotal.text = string.Format("总共{0}条记录", xd.Records.Count);
         for (int i = 0; i < xd.Records.Count; i++)
         {

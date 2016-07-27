@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 public class UI_Set : UI_Base
 {
     public Button Btn_OK, Btn_Back;
-    public InputField Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_CD, Input_JSCD;
+    public InputField Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_CD, Input_JSCD,Input_Day;
     public Toggle Tog_JC, Tog_JCJS;
     private WJ_Set Set;
 
@@ -27,6 +27,7 @@ public class UI_Set : UI_Base
         Input_Password.text = Set.Password;
         Input_CD.text = Set.CD.ToString();
         Input_JSCD.text = (Set.JSCD / 60.0f).ToString();
+        Input_Day.text = Set.Day.ToString();
         if (App.Instance.Data.Set.RunType == 0)
         {
             Tog_JC.isOn = true;
@@ -49,8 +50,8 @@ public class UI_Set : UI_Base
     private void Btn_OK_Click()
     {
         bool relogin = false;
-        string WJ_Code,Place, DataServer,DataPort, CustomerIDStr, Password,CDStr,CDJSStr;
-        int data_port;
+        string WJ_Code,Place, DataServer,DataPort, CustomerIDStr, Password,CDStr,CDJSStr,DayStr;
+        int data_port, Day;
         long CustomerID;
         float CD,CDJS;
 
@@ -137,6 +138,20 @@ public class UI_Set : UI_Base
         }
         #endregion
 
+        #region 自动删除天数
+        DayStr = Input_Day.text;
+        if (string.IsNullOrEmpty(DayStr))
+        {
+            TipsManager.Instance.Error("自动删除天数为空！");
+            return;
+        }
+        if (!int.TryParse(DayStr, out Day))
+        {
+            TipsManager.Instance.Error("自动删除天数格式错误！");
+            return;
+        }
+        #endregion
+
         Set.CD = CD;
         Set.JSCD = CDJS*60;
         Set.WJ_Code = WJ_Code;
@@ -151,7 +166,7 @@ public class UI_Set : UI_Base
 
         Set.CustomerID = CustomerID;
         Set.Password = Password;
-
+        Set.Day = Day;
         Set.RunType = Tog_JC.isOn ? 0 : 1;
 
 

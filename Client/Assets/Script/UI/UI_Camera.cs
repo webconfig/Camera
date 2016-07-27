@@ -20,24 +20,17 @@ public class UI_Camera : UI_Base
     private Color[] cRes;
     private bool Js_Begin = false;
     private WJ_Record_Local last_record;
-    public override void UI_Start()
+
+    public override void UI_Init()
     {
-        //Debug.Log(App.Instance.Data.Set.RunType);
-        StartCoroutine(WebCamRun());
         Btn_JS.onClick.AddListener(Btn_Capture_Click2);
         Btn_Capture.onClick.AddListener(Btn_Capture_Click);
         Btn_Look.onClick.AddListener(Btn_Look_Click);
         Btn_Close.onClick.AddListener(Btn_Close_Click);
         Btn_Set.onClick.AddListener(Btn_Set_Click);
-        App.Instance.InputEvent += Btn_Capture_Click;
-        App.Instance.Data.ValueChange += Data_ValueChange;
-        App.Instance.Data.GoodsChangeEvent += Data_GoodsChangeEvent;
-        App.Instance.DataServer.RttChangeEvent += DataServer_RttChangeEvent;
-        App.Instance.DataServer.RunStrsChangeEvent += DataServer_RunStrsChangeEvent;
         Txt_Send.text = string.Format("已上传{1}车，总共{0}车", App.Instance.Data.Set.Total, App.Instance.Data.Set.Total - App.Instance.Data.LocalCount);
         Txt_WJ_Code.text = string.Format("挖机号：{0}", App.Instance.Data.Set.WJ_Code);
         Data_GoodsChangeEvent();
-
         WJ_Record_Local wr = null;
         if (App.Instance.Data.CurrentData.Records.Count > 0)
         {
@@ -109,6 +102,30 @@ public class UI_Camera : UI_Base
         }
     }
 
+    public override void UI_Start()
+    {
+        //Debug.Log(App.Instance.Data.Set.RunType);
+        StartCoroutine(WebCamRun());
+        App.Instance.InputEvent += Btn_Capture_Click;
+        App.Instance.Data.ValueChange += Data_ValueChange;
+        App.Instance.Data.GoodsChangeEvent += Data_GoodsChangeEvent;
+        App.Instance.DataServer.RttChangeEvent += DataServer_RttChangeEvent;
+        App.Instance.DataServer.RunStrsChangeEvent += DataServer_RunStrsChangeEvent;
+        
+    }
+    public override void UI_End()
+    {
+        App.Instance.InputEvent -= Btn_Capture_Click;
+        App.Instance.Data.ValueChange -= Data_ValueChange;
+        App.Instance.Data.GoodsChangeEvent -= Data_GoodsChangeEvent;
+        App.Instance.DataServer.RttChangeEvent -= DataServer_RttChangeEvent;
+        App.Instance.DataServer.RunStrsChangeEvent -= DataServer_RunStrsChangeEvent;
+        if (isPlay)
+        {
+            isPlay = false;
+            cameraTexture.Stop();
+        }
+    }
     void DataServer_RunStrsChangeEvent(string t)
     {
         Txt_RunStrs.text = t;
@@ -142,24 +159,6 @@ public class UI_Camera : UI_Base
     void Data_ValueChange(int t)
     {
         Txt_Send.text = string.Format("已上传{1}车，总共{0}车", App.Instance.Data.Set.Total, t);
-    }
-    public override void UI_End()
-    {
-        Btn_Capture.onClick.RemoveAllListeners();
-        Btn_Look.onClick.RemoveAllListeners();
-        Btn_Close.onClick.RemoveAllListeners();
-        Btn_Set.onClick.RemoveAllListeners();
-        Btn_JS.onClick.RemoveAllListeners();
-        App.Instance.Data.ValueChange -= Data_ValueChange;
-        App.Instance.Data.GoodsChangeEvent -= Data_GoodsChangeEvent;
-        App.Instance.InputEvent -= Btn_Capture_Click;
-        App.Instance.DataServer.RttChangeEvent -= DataServer_RttChangeEvent;
-        App.Instance.DataServer.RunStrsChangeEvent -= DataServer_RunStrsChangeEvent;
-        if (isPlay)
-        {
-            isPlay = false;
-            cameraTexture.Stop();
-        }
     }
     public void Btn_Capture_Click()
     {
@@ -236,65 +235,65 @@ public class UI_Camera : UI_Base
     }
     public void Btn_Capture_Click2()
     {
-        //if (isPlay)
-        //{
-        //    if (string.IsNullOrEmpty(App.Instance.Data.Set.WJ_Code))
-        //    {
-        //        TipsManager.Instance.Error("请先设置基础信息");
-        //        return;
-        //    }
-        //    isPlay = false;
-        //    //新建一个model
-        //    System.DateTime dt = System.DateTime.Now;
-        //    WJ_Photo wj_photo = new WJ_Photo();
-        //    wj_photo.CustomerID = App.Instance.Data.Set.CustomerID;
-        //    wj_photo.WJID = App.Instance.Data.Set.WJ_Code;
-        //    wj_photo.PhotoID = string.Format("{0}_{1}_{2}", App.Instance.Data.Set.CustomerID,App.Instance.Data.Set.WJ_Code, dt.ToString("yyMMddHHmmss"));
-        //    wj_photo.PhotoPath = wj_photo.PhotoID + ".jpg";
-        //    wj_photo.PhotoMiniPath = wj_photo.PhotoPath;
-        //    wj_photo.AtTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
-        //    #region 生成图片
-        //    //图片翻转180度
-        //    snap = new Texture2D(width, height);
-        //    Color[] cSource = cameraTexture.GetPixels();
-        //    for (int x = 0; x < width; x++)
-        //    {
-        //        for (int y = 0; y < height; y++)
-        //        {
-        //            cRes[((width - x - 1) * height) + height - y - 1] = cSource[(x * height) + y];
-        //        }
-        //    }
-        //    snap.SetPixels(cRes);
-        //    snap.Apply(false);
+        if (isPlay)
+        {
+            if (string.IsNullOrEmpty(App.Instance.Data.Set.WJ_Code))
+            {
+                TipsManager.Instance.Error("请先设置基础信息");
+                return;
+            }
+            isPlay = false;
+            //新建一个model
+            System.DateTime dt = System.DateTime.Now;
+            WJ_Photo_Local wj_photo = new WJ_Photo_Local();
+            wj_photo.CustomerID = App.Instance.Data.Set.CustomerID;
+            wj_photo.WJID = App.Instance.Data.Set.WJ_Code;
+            wj_photo.PhotoID = string.Format("{0}_{1}_{2}", App.Instance.Data.Set.CustomerID, App.Instance.Data.Set.WJ_Code, dt.ToString("yyMMddHHmmss"));
+            wj_photo.PhotoPath = wj_photo.PhotoID + ".jpg";
+            wj_photo.PhotoMiniPath = wj_photo.PhotoPath;
+            wj_photo.AtTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
+            #region 生成图片
+            //图片翻转180度
+            snap = new Texture2D(width, height);
+            Color[] cSource = cameraTexture.GetPixels();
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    cRes[((width - x - 1) * height) + height - y - 1] = cSource[(x * height) + y];
+                }
+            }
+            snap.SetPixels(cRes);
+            snap.Apply(false);
 
-        //    //===生成大图
-        //    byte[] pngData = snap.EncodeToJPG(50);
-        //    File.WriteAllBytes(App.Instance.Data.ImgPath + wj_photo.PhotoPath, pngData);
-        //    //===生成缩略图
-        //    TextureScale.Bilinear(snap, 100, 100);
-        //    pngData = snap.EncodeToJPG(40);
-        //    File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
-        //    #endregion
-        //    //===修改xml
-        //    if (App.Instance.Data.Add_JS( wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
-        //    {
-        //        Txt_JS_Time.text = "00:00:00";
-        //        Txt_Js_Btn.text = "结 束";
-        //        TipsManager.Instance.Info("开始计时");
-        //        Js_Begin = true;
-        //        last_record = App.Instance.Data.LocalData.Records_JS.Last();
-        //    }
-        //    else
-        //    {
-        //        Txt_Js_Btn.text = "开 始";
-        //        TipsManager.Instance.Info("结束计时");
-        //        Js_Begin = false;
-        //        last_record = null;
+            //===生成大图
+            byte[] pngData = snap.EncodeToJPG(50);
+            File.WriteAllBytes(App.Instance.Data.ImgPath + wj_photo.PhotoPath, pngData);
+            //===生成缩略图
+            TextureScale.Bilinear(snap, 100, 100);
+            pngData = snap.EncodeToJPG(40);
+            File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
+            #endregion
+            //===修改xml
+            if (App.Instance.Data.Add_JS(wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
+            {
+                Txt_JS_Time.text = "00:00:00";
+                Txt_Js_Btn.text = "结 束";
+                TipsManager.Instance.Info("开始计时");
+                Js_Begin = true;
+                last_record = App.Instance.Data.CurrentData.Records_JS.Values.Last();
+            }
+            else
+            {
+                Txt_Js_Btn.text = "开 始";
+                TipsManager.Instance.Info("结束计时");
+                Js_Begin = false;
+                last_record = null;
 
-        //    }
-        //    cameraTexture.Play();
-        //    isPlay = true;
-        //}
+            }
+            cameraTexture.Play();
+            isPlay = true;
+        }
     }
     public void Btn_Look_Click()
     {

@@ -223,13 +223,13 @@ namespace google.protobuf
   {
     public RecordResponse() {}
     
-    private readonly global::System.Collections.Generic.List<long> _records = new global::System.Collections.Generic.List<long>();
-    [global::ProtoBuf.ProtoMember(3, Name=@"records", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
-    public global::System.Collections.Generic.List<long> records
+    private long _record_id;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"record_id", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public long record_id
     {
-      get { return _records; }
+      get { return _record_id; }
+      set { _record_id = value; }
     }
-  
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }

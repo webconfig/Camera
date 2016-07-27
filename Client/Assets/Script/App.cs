@@ -13,24 +13,7 @@ public class App : MonoBehaviour
     }
     public AppData Data;
     public MainClient DataServer;
-    private float StartTimeNet=0, CdNet = 2;
-    public int NetCanRun=1;
     public event CallBack InputEvent;
-    public bool NetWorkCanDo
-    {
-        set
-        {
-            if (!value)
-            {
-                NetCanRun = 0;
-            }
-            else
-            {
-                NetCanRun = 2;
-                StartTimeNet = Time.time;
-            }
-        }
-    }
     void Awake()
     {
         _instance = this;
@@ -41,30 +24,19 @@ public class App : MonoBehaviour
     {
         Application.targetFrameRate = 20;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
-        NetCanRun = 1;
         DataServer = new MainClient();
         DataServer.Init();
+        UI_Manager.Instance.Init();
         UI_Manager.Instance.Show("UI_Camera");
     }
     void LateUpdate()
     {
-        if (NetCanRun == 2)
-        {
-            if (Time.time - StartTimeNet > CdNet)
-            {
-                NetCanRun = 1;
-            }
-        }
-        else if (NetCanRun == 1)
-        {
-            DataServer.LateUpdate();
-        }
+        DataServer.LateUpdate();
         Data.DelData();
     }
 
     public void messgae(string str)
     {
-        Debug.Log("messgae: " + str);
         if(InputEvent!=null)
         {
             InputEvent();
