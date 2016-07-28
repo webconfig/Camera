@@ -5,6 +5,8 @@ using System.Collections.Generic;
 
 public class Client
 {
+    public long CustomerID = -199;
+    public string  pwd="&*%";
     public TcpClient _client;
     public NetworkStream _stream;
     private List<byte> AllDatas;
@@ -13,7 +15,6 @@ public class Client
     public DataRecv DataServer;
     public FileRecv FileServer;
     private System.DateTime ReadTime;
-    private int ReadOutIndex = 0;
 
     public Client(TcpClient client)
     {
@@ -23,7 +24,7 @@ public class Client
         recieveData = new byte[ReceiveBufferSize];
         DataServer = new DataRecv();
         FileServer = new FileRecv();
-        TimeManager.GetInstance().TimeAction += Client_TimeAction;
+        //TimeManager.GetInstance().TimeAction += Client_TimeAction;
         new Thread(new ThreadStart(BeginRead)).Start();
     }
 
@@ -45,7 +46,7 @@ public class Client
         //}
     }
 
-    private void close()
+    public void close()
     {
         TimeManager.GetInstance().TimeAction -= Client_TimeAction;
         if (FileServer != null)
@@ -53,6 +54,7 @@ public class Client
             FileServer.Exit();
             FileServer = null;
         }
+        DataServer = null;
         this._stream.Dispose();
         this._stream = null;
         Debug.Info("关闭链接");
@@ -77,17 +79,26 @@ public class Client
     private void OnReceiveCallback(IAsyncResult ar)
     {
         ReadTime = System.DateTime.Now;
-        int length = _stream.EndRead(ar);
+        int length = 0;
+        try
+        {
+             length = _stream.EndRead(ar);
+        }
+        catch
+        {
+            close();
+            return;
+        }
         if (length == 0)
         {
             Debug.Error("接收数据长度：" + length);
             close();
             return;
         }
-        //if (length < 0)
-        //{
-        //    Debug.Error("接收数据长度居然小于0：" + length);
-        //}
+        else if (length < 0)
+        {
+            Debug.Error("接收数据长度居然小于0：" + length);
+        }
         else
         {
             //拷贝到缓存队列
@@ -95,27 +106,36 @@ public class Client
             {
                 AllDatas.Add(recieveData[i]);
             }
-            //读取消息体的长度
-            int len = NetHelp.BytesToInt(AllDatas, 0);
-            Debug.Info("接收数据长度：" + length + "|" + len);
-            //读取消息体内容
-            if (len + 4 <= AllDatas.Count)
+            if (AllDatas.Count == 0)
             {
-                int tp = NetHelp.BytesToInt(AllDatas, 4);//操作命令
-                byte[] msgBytes = new byte[len - 4];
-                AllDatas.CopyTo(8, msgBytes, 0, msgBytes.Length);
-                AllDatas.RemoveRange(0, len + 4);
-                if (tp == 0)
+                Debug.Error("AllDatas居然为0："+ length);
+                close();
+                return;
+            }
+            else
+            {
+                //读取消息体的长度
+                int len = NetHelp.BytesToInt(AllDatas, 0);
+                //Debug.Info("接收数据长度：" + length + "|" + len);
+                //读取消息体内容
+                if (len + 4 <= AllDatas.Count)
                 {
-                    Debug.Info("相应心跳");
-                }
-                if (tp < 10)
-                {//传输数据
-                    DataServer.Action(tp, msgBytes, _stream);
-                }
-                else if (tp < 20)
-                {//传输图片
-                    FileServer.Action(tp, msgBytes, _stream);
+                    int tp = NetHelp.BytesToInt(AllDatas, 4);//操作命令
+                    byte[] msgBytes = new byte[len - 4];
+                    AllDatas.CopyTo(8, msgBytes, 0, msgBytes.Length);
+                    AllDatas.RemoveRange(0, len + 4);
+                    if (tp == 0)
+                    {
+                        Debug.Info("相应心跳");
+                    }
+                    if (tp < 10)
+                    {//传输数据
+                        DataServer.Action(tp, msgBytes, this);
+                    }
+                    else if (tp < 20)
+                    {//传输图片
+                        FileServer.Action(tp, msgBytes, _stream);
+                    }
                 }
             }
         }

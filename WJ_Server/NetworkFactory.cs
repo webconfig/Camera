@@ -36,7 +36,15 @@ internal class NetworkFactory
 
     private void BeginAcceptTcpClient(IAsyncResult ar)
     {
-        Accept(NetworkListener.EndAcceptTcpClient(ar));
+        try
+        {
+            TcpClient tcpClient = NetworkListener.EndAcceptTcpClient(ar);
+            Accept(tcpClient);
+        }
+        catch
+        {
+
+        }
         NetworkListener.BeginAcceptTcpClient(new AsyncCallback(this.BeginAcceptTcpClient), (object)null);
     }
 

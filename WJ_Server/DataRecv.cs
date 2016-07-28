@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using google.protobuf;
-using Dos.ORM;
-using Dos.Model;
 using System.Net.Sockets;
+using Dos.Model;
+using Dos.ORM;
+using System.Collections.Generic;
 
 public class DataRecv
 {
-    public void Action(int tp, byte[] data, NetworkStream _stream)
+    public void Action(int tp, byte[] data, Client client)
     {
         switch (tp)
         {
@@ -32,6 +32,9 @@ public class DataRecv
                     {
                         response_login.Result = "1";
                     }
+                    client.CustomerID = request_login.CustomerID;
+                    client.pwd = request_login.Password;
+                    ClientManager.GetInstance().EndClient(request_login.CustomerID, request_login.Password);
                     Debug.Info("登录成功");
                 }
                 else
@@ -43,7 +46,8 @@ public class DataRecv
                 //response_login.Result = "1.0";
                 //response_login.Url = "www.baidu.com";
                 //Debug.Info("登录成功");
-                NetHelp.Send(1, response_login, _stream);
+
+                NetHelp.Send(1, response_login, client._stream);
                 break;
             case 2://获取Goods
                 GoodsRequest request_goods;
@@ -69,7 +73,7 @@ public class DataRecv
                 //item.GoodsID = "1";
                 //item.GoodsName = "dddd";
                 //response_goods.result.Add(item);
-                NetHelp.Send<GoodsResponse>(2, response_goods, _stream);
+                NetHelp.Send<GoodsResponse>(2, response_goods, client._stream);
                 break;
             case 4:
                 google.protobuf.WJ_Record request_record;
@@ -87,8 +91,8 @@ public class DataRecv
                 {//有结束图片
                     state = 2;
                 }
-                ////===测试===
-                //response_record.records.Add(request_record.records[i].ID);
+                ////=== 测试 ===
+                //response_record.record_id = request_record.ID;
 
                 //===数据库
                 WJ_Record_Submit record_submit = new WJ_Record_Submit
@@ -159,13 +163,13 @@ public class DataRecv
                 }
                 if (num == 1)
                 {
-                    response_record.record_id=request_record.ID;
+                    response_record.record_id = request_record.ID;
                 }
                 else
                 {
                     response_record.record_id = -1;
                 }
-                NetHelp.Send<RecordResponse>(3, response_record, _stream);
+                NetHelp.Send<RecordResponse>(3, response_record, client._stream);
                 break;
         }
     }

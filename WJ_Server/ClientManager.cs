@@ -4,7 +4,7 @@ using System.Net.Sockets;
 internal class ClientManager
 {
     private static ClientManager Instance = new ClientManager();
-    private List<Client> _Clients = new List<Client>();
+    public List<Client> _Clients = new List<Client>();
 
     static ClientManager()
     {
@@ -17,7 +17,7 @@ internal class ClientManager
 
     public static ClientManager GetInstance()
     {
-        return ClientManager.Instance;
+        return Instance;
     }
 
     public void AddClient(TcpClient tcp)
@@ -39,5 +39,20 @@ internal class ClientManager
             return;
 
         this._Clients.Remove(loginClient);
+    }
+
+    public void EndClient(long CustomerID, string pwd)
+    {
+        Client item;
+        for (int i = 0; i < _Clients.Count; i++)
+        {
+            item = _Clients[i];
+            if (string.Equals(CustomerID, item.CustomerID) && string.Equals(pwd, item.pwd))
+            {
+                item.close();
+                _Clients.Remove(item);
+                return;
+            }
+        }
     }
 }

@@ -1,9 +1,9 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using google.protobuf;
-using Dos.Model;
-using Dos.ORM;
 using System.Net.Sockets;
+using Dos.ORM;
+using System;
+using Dos.Model;
 
 public class FileRecv
 {
