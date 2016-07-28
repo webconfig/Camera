@@ -102,6 +102,8 @@ public class AppData
     public LocalXmlData CurrentData;
     public void InitDataFile()
     {
+        ImgPath = Application.persistentDataPath + "/img/";
+        ImgMinPath = Application.persistentDataPath + "/img_min/";
         //===图片存放目录
         if (!Directory.Exists(ImgPath))
         {
@@ -114,6 +116,7 @@ public class AppData
 
         LocalDataParentPath = Application.persistentDataPath + "/data/";
         #region 处理历史记录
+        OldDatas = new List<LocalXmlData>();
         if (!Directory.Exists(LocalDataParentPath))
         {
             Directory.CreateDirectory(LocalDataParentPath);
@@ -146,7 +149,7 @@ public class AppData
                     }
                     else if(ts.Days <= 1)
                     {//当天记录
-                        CurrentData= Read(ffs[i].FullName, false, false,false);
+                        CurrentData= Read(ffs[i].FullName, false, true,false);
                     }
                     else
                     {
@@ -188,6 +191,7 @@ public class AppData
         CurrentData.Records = new Dictionary<long, WJ_Record_Local>();
         CurrentData.Records_JS = new Dictionary<long, WJ_Record_Local>();
         CurrentData.Records_Submit = new Dictionary<long, WJ_Record_Local>();
+        CurrentData.AllRecords = new List<WJ_Record_Local>();
     }
 
     private LocalXmlData Read(string path,bool save,bool read_all,bool IsOld)
@@ -196,7 +200,7 @@ public class AppData
         result.XmlPath = path;
         result.Xml = new XmlDocument();
         result.Xml.LoadXml(File.ReadAllText(path));
-        if (result.Xml.FirstChild.Attributes["over"].Value == "true")
+        if (IsOld&&result.Xml.FirstChild.Attributes["over"].Value == "true")
         {//该文件的数据已经上传完成
             return null;
         }
@@ -209,6 +213,10 @@ public class AppData
             result.Records_Submit = new Dictionary<long, WJ_Record_Local>();
             result.Records = new Dictionary<long, WJ_Record_Local>();
             result.Records_JS = new Dictionary<long, WJ_Record_Local>();
+            if(!IsOld)
+            {
+                result.AllRecords = new List<WJ_Record_Local>();
+            }
 
             #region 统计未上传的图片
             XmlNodeList nodes = result.photo_parent.SelectNodes("item");
@@ -224,16 +232,20 @@ public class AppData
                     }
                 }
                 WJ_Photo_Local photo = new WJ_Photo_Local();
+                photo.Data = new WJ_Photo();
                 photo.SeqID = node.Attributes["SeqID"].InnerText;
-                photo.CustomerID = long.Parse(node.Attributes["CustomerID"].InnerText);
-                photo.WJID = node.Attributes["WJID"].InnerText;
-                photo.PhotoID = node.Attributes["PhotoID"].InnerText;
-                photo.PhotoPath = node.Attributes["PhotoPath"].InnerText;
-                photo.AtTime = node.Attributes["AtTime"].InnerText;
+                photo.Data.CustomerID = long.Parse(node.Attributes["CustomerID"].InnerText);
+                photo.Data.WJID = node.Attributes["WJID"].InnerText;
+                photo.Data.PhotoID = node.Attributes["PhotoID"].InnerText;
+                photo.Data.PhotoPath = node.Attributes["PhotoPath"].InnerText;
+                photo.Data.AtTime = node.Attributes["AtTime"].InnerText;
                 photo.PhotoMiniPath = node.Attributes["PhotoMiniPath"].InnerText;
                 photo.State=int.Parse(node.Attributes["State"].InnerText);
-                result.Photos.Add(photo.PhotoID, photo);
-                result.PhotosSubmit.Add(photo.SeqID, photo);
+                result.Photos.Add(photo.Data.PhotoID, photo);
+                if (photo.State != 1)
+                {
+                    result.PhotosSubmit.Add(photo.SeqID, photo);
+                }
             }
             #endregion
             #region 统计未上传的数据
@@ -249,30 +261,42 @@ public class AppData
                     }
                 }
                 WJ_Record_Local record = new WJ_Record_Local();
-                record.CustomerID = long.Parse(node.Attributes["CustomerID"].InnerText);
-                record.WJID = node.Attributes["WJID"].InnerText;
-                record.ID = long.Parse(node.Attributes["ID"].InnerText);
-                record.WorkSpace = node.Attributes["WorkSpace"].InnerText;
-                record.GoodsName = node.Attributes["GoodsName"].InnerText;
+                record.Data = new WJ_Record();
+                record.Data.CustomerID = long.Parse(node.Attributes["CustomerID"].InnerText);
+                record.Data.WJID = node.Attributes["WJID"].InnerText;
+                record.Data.ID = long.Parse(node.Attributes["ID"].InnerText);
+                record.Data.WorkSpace = node.Attributes["WorkSpace"].InnerText;
+                record.Data.GoodsName = node.Attributes["GoodsName"].InnerText;
 
-                record.BeginTime = node.Attributes["BeginTime"].InnerText;
-                record.EndTime = node.Attributes["EndTime"].InnerText;
-                record.BgeinPhotoID = node.Attributes["BgeinPhotoID"].InnerText;
-                record.EndPhotoID = node.Attributes["EndPhotoID"].InnerText;
-                record.longitude = float.Parse(node.Attributes["longitude"].InnerText);
-                record.Latitude = float.Parse(node.Attributes["Latitude"].InnerText);
-                record.Mode = int.Parse(node.Attributes["Mode"].InnerText);
+                record.Data.BeginTime = node.Attributes["BeginTime"].InnerText;
+                record.Data.EndTime = node.Attributes["EndTime"].InnerText;
+                record.Data.BgeinPhotoID = node.Attributes["BgeinPhotoID"].InnerText;
+                record.Data.EndPhotoID = node.Attributes["EndPhotoID"].InnerText;
+                record.Data.longitude = float.Parse(node.Attributes["longitude"].InnerText);
+                record.Data.Latitude = float.Parse(node.Attributes["Latitude"].InnerText);
+                record.Data.Mode = int.Parse(node.Attributes["Mode"].InnerText);
                 record.AddTime = int.Parse(node.Attributes["add_time"].InnerText);
                 record.State = int.Parse(node.Attributes["State"].InnerText);
 
-                result.Records_Submit.Add(record.ID, record);
-                if (record.Mode == 1)
+                if (IsOld)
                 {
-                    result.Records_JS.Add(record.ID, record);
+                    result.Records_Submit.Add(record.Data.ID, record);
                 }
                 else
                 {
-                    result.Records.Add(record.ID, record);
+                    result.AllRecords.Insert(0, record);
+                    if (record.State == 0 && !string.IsNullOrEmpty(record.Data.EndPhotoID))
+                    {
+                        result.Records_Submit.Add(record.Data.ID, record);
+                    }
+                }
+                if (record.Data.Mode == 1)
+                {
+                    result.Records_JS.Add(record.Data.ID, record);
+                }
+                else
+                {
+                    result.Records.Add(record.Data.ID, record);
                 }
 
             }
@@ -336,19 +360,7 @@ public class AppData
                 }
                 #endregion
 
-                #region  统计
-                LocalCount = 0;
-                for (int k = 0; k < OldDatas.Count; k++)
-                {
-                    LocalCount += OldDatas[k].Records.Count;
-                }
-                LocalCount += CurrentData.Records.Count;
-                if (string.IsNullOrEmpty(CurrentData.Records.Values.Last().EndPhotoID))
-                {
-                    LocalCount--;
-                }
-                OnValueChange();
-                #endregion
+                GetTotal();
             }
             catch
             {
@@ -390,6 +402,24 @@ public class AppData
     }
     #endregion
 
+    public void GetTotal()
+    {
+        LocalCount = 0;
+        for (int k = 0; k < OldDatas.Count; k++)
+        {
+            LocalCount += OldDatas[k].Records.Count;
+        }
+        var enumerator = CurrentData.Records.GetEnumerator();
+        while (enumerator.MoveNext())
+        {
+            if(enumerator.Current.Value.State!=1)
+            {
+                LocalCount++;
+            }
+        }
+        OnValueChange();
+    }
+
     #region 计次
     public bool Add(WJ_Photo_Local wj_photo, DateTime dt, string GoodsName)
     {
@@ -397,7 +427,7 @@ public class AppData
         #region 修改计时
         WJ_Record_Local last_record_js = null;
         if (CurrentData.Records_JS.Count > 0) { last_record_js = CurrentData.Records_JS.Values.Last(); }
-        if (last_record_js != null && string.IsNullOrEmpty(last_record_js.EndPhotoID))
+        if (last_record_js != null && string.IsNullOrEmpty(last_record_js.Data.EndPhotoID))
         {
             //修改record
             System.TimeSpan ts = dt - last_record_js.BeginTime_T;
@@ -408,7 +438,7 @@ public class AppData
 
         WJ_Record_Local last_record = null;
         if (CurrentData.Records.Count > 0) { last_record = CurrentData.Records.Values.Last(); }
-        if (last_record == null || !string.IsNullOrEmpty(last_record.EndPhotoID))
+        if (last_record == null || !string.IsNullOrEmpty(last_record.Data.EndPhotoID))
         {// 新纪录
             #region 修改计时
             if (need_save)
@@ -418,7 +448,7 @@ public class AppData
                 for (int i = local_nodes.Count - 1; i >= 0; i--)
                 {
                     local_node = local_nodes[i];
-                    if (string.Equals(local_node.Attributes["ID"].InnerText, last_record_js.ID))
+                    if (string.Equals(local_node.Attributes["ID"].InnerText, last_record_js.Data.ID))
                     {
                         local_node.Attributes["add_time"].Value = last_record_js.AddTime.ToString();
                         break;
@@ -446,48 +476,50 @@ public class AppData
             }
             #endregion
             #region 添加本地记录
-            CurrentData.Photos.Add(wj_photo.PhotoID, wj_photo);//图片集合
+            CurrentData.Photos.Add(wj_photo.Data.PhotoID, wj_photo);//图片集合
             CurrentData.PhotosSubmit.Add(wj_photo.SeqID, wj_photo);
             WJ_Record_Local wj_record = new WJ_Record_Local();
-            wj_record.CustomerID = wj_photo.CustomerID;
-            wj_record.WJID = wj_photo.WJID;
-            wj_record.ID = dt.Ticks;
-            wj_record.WorkSpace = App.Instance.Data.Set.Place;
-            wj_record.GoodsName = GoodsName;
-            wj_record.BeginTime = wj_photo.AtTime;
-            wj_record.EndTime = wj_photo.AtTime;
+            wj_record.Data = new WJ_Record();
+            wj_record.Data.CustomerID = wj_photo.Data.CustomerID;
+            wj_record.Data.WJID = wj_photo.Data.WJID;
+            wj_record.Data.ID = dt.Ticks;
+            wj_record.Data.WorkSpace = App.Instance.Data.Set.Place;
+            wj_record.Data.GoodsName = GoodsName;
+            wj_record.Data.BeginTime = wj_photo.Data.AtTime;
+            wj_record.Data.EndTime = wj_photo.Data.AtTime;
             //wj_record.EndTime_T = DateTime.MinValue;
-            wj_record.BgeinPhotoID = wj_photo.PhotoID;
-            wj_record.EndPhotoID = "";
-            wj_record.longitude = 0;
-            wj_record.Latitude = 0;
-            wj_record.Mode = 0;
-            CurrentData.Records.Add(wj_record.ID, wj_record);//record 集合
+            wj_record.Data.BgeinPhotoID = wj_photo.Data.PhotoID;
+            wj_record.Data.EndPhotoID = "";
+            wj_record.Data.longitude = 0;
+            wj_record.Data.Latitude = 0;
+            wj_record.Data.Mode = 0;
+            CurrentData.Records.Add(wj_record.Data.ID, wj_record);//record 集合
+            CurrentData.AllRecords.Insert(0, wj_record);
             //photo xml
             XmlElement node_photo = CurrentData.Xml.CreateElement("item");
             node_photo.SetAttribute("SeqID", wj_photo.SeqID);
-            node_photo.SetAttribute("CustomerID", wj_photo.CustomerID.ToString());
-            node_photo.SetAttribute("WJID", wj_photo.WJID);
-            node_photo.SetAttribute("PhotoID", wj_photo.PhotoID);
-            node_photo.SetAttribute("PhotoPath", wj_photo.PhotoPath);
+            node_photo.SetAttribute("CustomerID", wj_photo.Data.CustomerID.ToString());
+            node_photo.SetAttribute("WJID", wj_photo.Data.WJID);
+            node_photo.SetAttribute("PhotoID", wj_photo.Data.PhotoID);
+            node_photo.SetAttribute("PhotoPath", wj_photo.Data.PhotoPath);
             node_photo.SetAttribute("PhotoMiniPath", wj_photo.PhotoMiniPath);
-            node_photo.SetAttribute("AtTime", wj_photo.AtTime);
+            node_photo.SetAttribute("AtTime", wj_photo.Data.AtTime);
             node_photo.SetAttribute("State", "0");//未上传
             CurrentData.photo_parent.AppendChild(node_photo);
             //record xml
             XmlElement node_data = CurrentData.Xml.CreateElement("item");
-            node_data.SetAttribute("CustomerID", wj_record.CustomerID.ToString());
-            node_data.SetAttribute("WJID", wj_record.WJID);
-            node_data.SetAttribute("ID", wj_record.ID.ToString());
-            node_data.SetAttribute("WorkSpace", wj_record.WorkSpace);
-            node_data.SetAttribute("GoodsName", wj_record.GoodsName);
-            node_data.SetAttribute("BeginTime", wj_record.BeginTime);
-            node_data.SetAttribute("EndTime", wj_record.EndTime);
-            node_data.SetAttribute("BgeinPhotoID", wj_record.BgeinPhotoID);
-            node_data.SetAttribute("EndPhotoID", wj_record.EndPhotoID);
-            node_data.SetAttribute("longitude", wj_record.longitude.ToString());
-            node_data.SetAttribute("Latitude", wj_record.Latitude.ToString());
-            node_data.SetAttribute("Mode", wj_record.Mode.ToString());
+            node_data.SetAttribute("CustomerID", wj_record.Data.CustomerID.ToString());
+            node_data.SetAttribute("WJID", wj_record.Data.WJID);
+            node_data.SetAttribute("ID", wj_record.Data.ID.ToString());
+            node_data.SetAttribute("WorkSpace", wj_record.Data.WorkSpace);
+            node_data.SetAttribute("GoodsName", wj_record.Data.GoodsName);
+            node_data.SetAttribute("BeginTime", wj_record.Data.BeginTime);
+            node_data.SetAttribute("EndTime", wj_record.Data.EndTime);
+            node_data.SetAttribute("BgeinPhotoID", wj_record.Data.BgeinPhotoID);
+            node_data.SetAttribute("EndPhotoID", wj_record.Data.EndPhotoID);
+            node_data.SetAttribute("longitude", wj_record.Data.longitude.ToString());
+            node_data.SetAttribute("Latitude", wj_record.Data.Latitude.ToString());
+            node_data.SetAttribute("Mode", wj_record.Data.Mode.ToString());
             node_data.SetAttribute("add_time", wj_record.AddTime.ToString());
             node_data.SetAttribute("State", "0");//未上传
             CurrentData.record_parent.AppendChild(node_data);
@@ -500,19 +532,22 @@ public class AppData
             #region 修改本地记录
             //添加图片
             CurrentData.PhotosSubmit.Add(wj_photo.SeqID, wj_photo);
-            CurrentData.Photos.Add(wj_photo.PhotoID, wj_photo);
+            CurrentData.Photos.Add(wj_photo.Data.PhotoID, wj_photo);
             //photo xml
             XmlElement node_photo = CurrentData.Xml.CreateElement("item");
-            node_photo.SetAttribute("CustomerID", wj_photo.CustomerID.ToString());
-            node_photo.SetAttribute("WJID", wj_photo.WJID);
-            node_photo.SetAttribute("PhotoID", wj_photo.PhotoID);
-            node_photo.SetAttribute("PhotoPath", wj_photo.PhotoPath);
+            node_photo.SetAttribute("SeqID", wj_photo.SeqID);
+            node_photo.SetAttribute("CustomerID", wj_photo.Data.CustomerID.ToString());
+            node_photo.SetAttribute("WJID", wj_photo.Data.WJID);
+            node_photo.SetAttribute("PhotoID", wj_photo.Data.PhotoID);
+            node_photo.SetAttribute("PhotoPath", wj_photo.Data.PhotoPath);
             node_photo.SetAttribute("PhotoMiniPath", wj_photo.PhotoMiniPath);
-            node_photo.SetAttribute("AtTime", wj_photo.AtTime);
+            node_photo.SetAttribute("AtTime", wj_photo.Data.AtTime);
+            node_photo.SetAttribute("State", "0");//未上传
             CurrentData.photo_parent.AppendChild(node_photo);
             //修改record
-            last_record.EndPhotoID = wj_photo.PhotoID;
-            last_record.EndTime = wj_photo.AtTime;
+            last_record.Data.EndPhotoID = wj_photo.Data.PhotoID;
+            last_record.Data.EndTime = wj_photo.Data.AtTime;
+            string record_id = last_record.Data.ID.ToString();
             //===便利xml==
             XmlNodeList local_nodes = CurrentData.record_parent.ChildNodes;
             XmlNode local_node;
@@ -525,20 +560,19 @@ public class AppData
                 IDStr = local_node.Attributes["ID"].InnerText;
                 if (!save_self)
                 {
-                    if (string.Equals(IDStr, last_record.ID))
+                    if (string.Equals(IDStr, record_id))
                     {
-                        local_node.Attributes["EndPhotoID"].Value = last_record.EndPhotoID;
-                        local_node.Attributes["EndTime"].Value = last_record.EndTime;
+                        local_node.Attributes["EndPhotoID"].Value = last_record.Data.EndPhotoID;
+                        local_node.Attributes["EndTime"].Value = last_record.Data.EndTime;
                         save_self = true;
                     }
                 }
                 if (!save_js)
                 {
-                    if (string.Equals(IDStr, last_record_js.ID))
+                    if (string.Equals(IDStr, record_id))
                     {
                         local_node.Attributes["add_time"].Value = last_record_js.AddTime.ToString();
                         save_js = true;
-                        break;
                     }
                 }
                 if(save_js&&save_js)
@@ -549,7 +583,7 @@ public class AppData
             CurrentData.Xml.Save(CurrentData.XmlPath);//保存到硬盘
             #endregion
 
-            CurrentData.Records_Submit.Add(last_record.ID,last_record);//添加到上传列表
+            CurrentData.Records_Submit.Add(last_record.Data.ID,last_record);//添加到上传列表
             LocalCount += 1;
             Set.Total += 1;
             SaveTotal();
@@ -584,52 +618,56 @@ public class AppData
 
         WJ_Record_Local last_record = null;
         if (App.Instance.Data.CurrentData.Records_JS.Count > 0) { last_record = App.Instance.Data.CurrentData.Records_JS.Values.Last(); }
-        if (last_record == null || !string.IsNullOrEmpty(last_record.EndPhotoID))
+        if (last_record == null || !string.IsNullOrEmpty(last_record.Data.EndPhotoID))
         {//新纪录
             #region 添加本地记录
             CurrentData.PhotosSubmit.Add(wj_photo.SeqID, wj_photo);//上传列表
-            CurrentData.Photos.Add(wj_photo.PhotoID, wj_photo);//图片集合
+            CurrentData.Photos.Add(wj_photo.Data.PhotoID, wj_photo);//图片集合
             WJ_Record_Local wj_record = new WJ_Record_Local();
-            wj_record.CustomerID = wj_photo.CustomerID;
-            wj_record.WJID = wj_photo.WJID;
-            wj_record.ID = dt.Ticks;
-            wj_record.WorkSpace = App.Instance.Data.Set.Place;
-            wj_record.GoodsName = GoodsName;
-            wj_record.BgeinPhotoID = wj_photo.PhotoID;
-            //wj_record.Time_T = dt;
+            wj_record.Data = new WJ_Record();
+            wj_record.Data.CustomerID = wj_photo.Data.CustomerID;
+            wj_record.Data.WJID = wj_photo.Data.WJID;
+            wj_record.Data.ID = dt.Ticks;
+            wj_record.Data.WorkSpace = App.Instance.Data.Set.Place;
+            wj_record.Data.GoodsName = GoodsName;
+            wj_record.Data.BgeinPhotoID = wj_photo.Data.PhotoID;
             wj_record.BeginTime_T = dt;
-            wj_record.BeginTime = wj_photo.AtTime;
-            wj_record.EndPhotoID = "";
-            wj_record.EndTime = wj_photo.AtTime;
-            //wj_record.EndTime_T = DateTime.MinValue;
-            wj_record.longitude = 0;
-            wj_record.Latitude = 0;
-            wj_record.Mode = 1;
-            CurrentData.Records_JS.Add(wj_record.ID,wj_record);//添加到 Records_JS 集合
+            wj_record.StartTime_T = dt;
+            wj_record.Data.BeginTime = wj_photo.Data.AtTime;
+            wj_record.Data.EndPhotoID = "";
+            wj_record.Data.EndTime = wj_photo.Data.AtTime;
+            wj_record.Data.longitude = 0;
+            wj_record.Data.Latitude = 0;
+            wj_record.Data.Mode = 1;
+            CurrentData.Records_JS.Add(wj_record.Data.ID,wj_record);//添加到 Records_JS 集合
+            CurrentData.AllRecords.Insert(0, wj_record);
             //photo xml
             XmlElement node_photo = CurrentData.Xml.CreateElement("item");
-            node_photo.SetAttribute("CustomerID", wj_photo.CustomerID.ToString());
-            node_photo.SetAttribute("WJID", wj_photo.WJID);
-            node_photo.SetAttribute("PhotoID", wj_photo.PhotoID);
-            node_photo.SetAttribute("PhotoPath", wj_photo.PhotoPath);
+            node_photo.SetAttribute("SeqID", wj_photo.SeqID);
+            node_photo.SetAttribute("CustomerID", wj_photo.Data.CustomerID.ToString());
+            node_photo.SetAttribute("WJID", wj_photo.Data.WJID);
+            node_photo.SetAttribute("PhotoID", wj_photo.Data.PhotoID);
+            node_photo.SetAttribute("PhotoPath", wj_photo.Data.PhotoPath);
             node_photo.SetAttribute("PhotoMiniPath", wj_photo.PhotoMiniPath);
-            node_photo.SetAttribute("AtTime", wj_photo.AtTime);
+            node_photo.SetAttribute("AtTime", wj_photo.Data.AtTime);
+            node_photo.SetAttribute("State", "0");//未上传
             CurrentData.photo_parent.AppendChild(node_photo);
             //record xml
             XmlElement node_data = CurrentData.Xml.CreateElement("item");
-            node_data.SetAttribute("CustomerID", wj_record.CustomerID.ToString());
-            node_data.SetAttribute("WJID", wj_record.WJID);
-            node_data.SetAttribute("ID", wj_record.ID.ToString());
-            node_data.SetAttribute("WorkSpace", wj_record.WorkSpace);
-            node_data.SetAttribute("GoodsName", wj_record.GoodsName);
-            node_data.SetAttribute("BeginTime", wj_record.BeginTime);
-            node_data.SetAttribute("EndTime", wj_record.EndTime);
-            node_data.SetAttribute("BgeinPhotoID", wj_record.BgeinPhotoID);
-            node_data.SetAttribute("EndPhotoID", wj_record.EndPhotoID);
-            node_data.SetAttribute("longitude", wj_record.longitude.ToString());
-            node_data.SetAttribute("Latitude", wj_record.Latitude.ToString());
-            node_data.SetAttribute("Mode", wj_record.Mode.ToString());
+            node_data.SetAttribute("CustomerID", wj_record.Data.CustomerID.ToString());
+            node_data.SetAttribute("WJID", wj_record.Data.WJID);
+            node_data.SetAttribute("ID", wj_record.Data.ID.ToString());
+            node_data.SetAttribute("WorkSpace", wj_record.Data.WorkSpace);
+            node_data.SetAttribute("GoodsName", wj_record.Data.GoodsName);
+            node_data.SetAttribute("BeginTime", wj_record.Data.BeginTime);
+            node_data.SetAttribute("EndTime", wj_record.Data.EndTime);
+            node_data.SetAttribute("BgeinPhotoID", wj_record.Data.BgeinPhotoID);
+            node_data.SetAttribute("EndPhotoID", wj_record.Data.EndPhotoID);
+            node_data.SetAttribute("longitude", wj_record.Data.longitude.ToString());
+            node_data.SetAttribute("Latitude", wj_record.Data.Latitude.ToString());
+            node_data.SetAttribute("Mode", wj_record.Data.Mode.ToString());
             node_data.SetAttribute("add_time", wj_record.AddTime.ToString());
+            node_data.SetAttribute("State", "0");//未上传
             CurrentData.record_parent.AppendChild(node_data);
             CurrentData.Xml.Save(CurrentData.XmlPath);//存储到本地
             #endregion
@@ -640,33 +678,38 @@ public class AppData
             #region 修改本地记录
             //添加图片
             CurrentData.PhotosSubmit.Add(wj_photo.SeqID, wj_photo);//上传列表
-            CurrentData.Photos.Add(wj_photo.PhotoID, wj_photo);//图片集合
+            CurrentData.Photos.Add(wj_photo.Data.PhotoID, wj_photo);//图片集合
             //photo xml
             XmlElement node_photo = CurrentData.Xml.CreateElement("item");
-            node_photo.SetAttribute("CustomerID", wj_photo.CustomerID.ToString());
-            node_photo.SetAttribute("WJID", wj_photo.WJID);
-            node_photo.SetAttribute("PhotoID", wj_photo.PhotoID);
-            node_photo.SetAttribute("PhotoPath", wj_photo.PhotoPath);
+            node_photo.SetAttribute("SeqID", wj_photo.SeqID);
+            node_photo.SetAttribute("CustomerID", wj_photo.Data.CustomerID.ToString());
+            node_photo.SetAttribute("WJID", wj_photo.Data.WJID);
+            node_photo.SetAttribute("PhotoID", wj_photo.Data.PhotoID);
+            node_photo.SetAttribute("PhotoPath", wj_photo.Data.PhotoPath);
             node_photo.SetAttribute("PhotoMiniPath", wj_photo.PhotoMiniPath);
-            node_photo.SetAttribute("AtTime", wj_photo.AtTime);
+            node_photo.SetAttribute("AtTime", wj_photo.Data.AtTime);
+            node_photo.SetAttribute("State", "0");//未上传
             CurrentData.photo_parent.AppendChild(node_photo);
             //修改record
-            last_record.EndPhotoID = wj_photo.PhotoID;
-            last_record.EndTime = wj_photo.AtTime;
+            last_record.Data.EndPhotoID = wj_photo.Data.PhotoID;
+            last_record.Data.EndTime = wj_photo.Data.AtTime;
+            string record_id = last_record.Data.ID.ToString();
             XmlNodeList local_nodes = CurrentData.record_parent.ChildNodes;
             XmlNode local_node;
             for (int i = local_nodes.Count - 1; i >= 0; i--)
             {
                 local_node = local_nodes[i];
-                if (string.Equals(local_node.Attributes["ID"].InnerText, last_record.ID))
+                if (string.Equals(local_node.Attributes["ID"].InnerText, record_id))
                 {
-                    local_node.Attributes["EndPhotoID"].Value = last_record.EndPhotoID;
-                    local_node.Attributes["EndTime"].Value = last_record.EndTime;
+                    local_node.Attributes["EndPhotoID"].Value = last_record.Data.EndPhotoID;
+                    local_node.Attributes["EndTime"].Value = last_record.Data.EndTime;
                     break;
                 }
             }
             CurrentData.Xml.Save(CurrentData.XmlPath);//保存到硬盘
             #endregion
+
+            CurrentData.Records_Submit.Add(last_record.Data.ID, last_record);//添加到上传列表
             return false;
         }
     }
@@ -674,24 +717,32 @@ public class AppData
     {
         System.DateTime dt = System.DateTime.Now;
         WJ_Record_Local last_record = CurrentData.Records_JS.Values.Last();
-        if (!string.IsNullOrEmpty(last_record.EndPhotoID)) { return; }
+        string record_id = last_record.Data.ID.ToString();
+        if (!string.IsNullOrEmpty(last_record.Data.EndPhotoID)) { return; }
         #region 修改本地记录
         //修改record
-        last_record.EndTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
+        last_record.Data.EndTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
         XmlNodeList local_nodes = CurrentData.record_parent.ChildNodes;
         XmlNode local_node;
         for (int i = local_nodes.Count - 1; i >= 0; i--)
         {
             local_node = local_nodes[i];
-            if (string.Equals(local_node.Attributes["ID"].InnerText, last_record.ID))
+            if (string.Equals(local_node.Attributes["ID"].InnerText, record_id))
             {
-                local_node.Attributes["EndTime"].Value = last_record.EndTime;
+                local_node.Attributes["EndTime"].Value = last_record.Data.EndTime;
                 break;
             }
         }
         CurrentData.Xml.Save(CurrentData.XmlPath);//保存到硬盘
         #endregion
-        CurrentData.Records_Submit.Add(last_record.ID,last_record);//添加到上传数据
+        if (CurrentData.Records_Submit.ContainsKey(last_record.Data.ID))
+        {
+            CurrentData.Records_Submit[last_record.Data.ID] = last_record;
+        }
+        else
+        {
+            CurrentData.Records_Submit.Add(last_record.Data.ID, last_record);//添加到上传数据
+        }
     }
     #endregion
 
@@ -785,15 +836,17 @@ public class LocalXmlData
     /// 上传的数据
     /// </summary>
     public Dictionary<long, WJ_Record_Local> Records_Submit;
-
+    public List<WJ_Record_Local> AllRecords;
 
     public bool DealRecord(List<long> ids, bool IsOld)
     {
         bool find = false;
         long id;
+        string id_str;
         for (int k = 0; k < ids.Count; k++)
         {
             id = ids[k];
+            id_str = id.ToString();
             if (Records_Submit.ContainsKey(id))
             {
                 Records_Submit.Remove(id);
@@ -806,13 +859,21 @@ public class LocalXmlData
                 }
                 else
                 {
-                    if (Records_JS.ContainsKey(id))
+                    if (Records.ContainsKey(id))
                     {
-                        if (string.IsNullOrEmpty(Records_JS[id].EndPhotoID))
+                        Records[id].State = 1;
+                    }
+                    else if (Records_JS.ContainsKey(id))
+                    {
+                        if (string.IsNullOrEmpty(Records_JS[id].Data.EndPhotoID))
                         {//是临时计时数据
                             ids.RemoveAt(k);
                             k--;
                             continue;
+                        }
+                        else
+                        {
+                            Records_JS[id].State = 1;
                         }
                     }
                 }
@@ -824,7 +885,7 @@ public class LocalXmlData
                     node = nodes[j];
                     if (!string.IsNullOrEmpty(node.Attributes["EndPhotoID"].Value))
                     {
-                        if (string.Equals(node.Attributes["ID"].Value, id))
+                        if (string.Equals(node.Attributes["ID"].Value, id_str))
                         {
                             node.Attributes["State"].Value = "1";
                             break;

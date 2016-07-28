@@ -41,6 +41,7 @@ public class UI_Manager:MonoBehaviour
     }
     public void Show(string name)
     {
+        App.Instance.DisAbleNewWork();
         OldCurrent = Current;
         if (Current != null)
         {
@@ -50,9 +51,11 @@ public class UI_Manager:MonoBehaviour
         UI_Datas[name].gameObject.SetActive(true);
         UI_Datas[name].UI_Start();
         Current = UI_Datas[name];
+        App.Instance.EnAbleNetWork();
     }
     public void Back()
     {
+        App.Instance.DisAbleNewWork();
         if (Current != null)
         {
             Current.UI_End();
@@ -62,6 +65,7 @@ public class UI_Manager:MonoBehaviour
         OldCurrent.UI_Start();
         Current = OldCurrent;
         OldCurrent = null;
+        App.Instance.EnAbleNetWork();
     }
 }
 public delegate void InputCode(string str);

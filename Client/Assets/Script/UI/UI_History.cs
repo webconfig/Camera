@@ -1,9 +1,6 @@
-﻿using System.Collections;
+﻿using google.protobuf;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 using UnityEngine.UI;
-
 public class UI_History : UI_Base
 {
     public Button Btn_Back;
@@ -13,15 +10,14 @@ public class UI_History : UI_Base
     {
         Btn_Back.onClick.AddListener(Btn_Back_Click);
         ShowData(App.Instance.Data.CurrentData);
-        table.ToEnd();
     }
     private void ShowData(LocalXmlData xd)
     {
-        WJ_Record_Local model;
-        TxtTotal.text = string.Format("总共{0}条记录", xd.Records.Count);
-        for (int i = 0; i < xd.Records.Count; i++)
+        WJ_Record model;
+        TxtTotal.text = string.Format("总共{0}条计次,{1}条计时,合计{2}条记录", xd.Records.Count, xd.Records_JS.Count, xd.AllRecords.Count);
+        for (int i = 0; i < xd.AllRecords.Count; i++)
         {
-            model = xd.Records[i];
+            model = xd.AllRecords[i].Data;
             Dictionary<string, string> data_row = new Dictionary<string, string>();
             data_row.Add("WJID", model.WJID);
             data_row.Add("BeginTime", model.BeginTime);
@@ -47,5 +43,4 @@ public class UI_History : UI_Base
     {
         UI_Manager.Instance.Back();
     }
-    
 }

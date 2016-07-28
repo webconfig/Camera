@@ -14,6 +14,8 @@ public class App : MonoBehaviour
     public AppData Data;
     public MainClient DataServer;
     public event CallBack InputEvent;
+    private int NetWork = 0;
+    private float NetWorkStartTime = 0, NetWorkCD = 3;
     void Awake()
     {
         _instance = this;
@@ -25,16 +27,34 @@ public class App : MonoBehaviour
         Application.targetFrameRate = 20;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         DataServer = new MainClient();
-        DataServer.Init();
         UI_Manager.Instance.Init();
         UI_Manager.Instance.Show("UI_Camera");
+        DataServer.Init();
     }
     void LateUpdate()
     {
-        DataServer.LateUpdate();
-        Data.DelData();
-    }
 
+        if (NetWork==0)
+        {
+            DataServer.LateUpdate();
+            Data.DelData();
+        }
+        else if (NetWork == 2)
+        {
+            if (Time.time - NetWorkStartTime >= NetWorkCD)
+            {
+                NetWork = 0;
+            }
+        }
+    }
+    public void DisAbleNewWork()
+    {
+        NetWork = 1;
+    }
+    public void EnAbleNetWork()
+    {
+        NetWork = 2;
+    }
     public void messgae(string str)
     {
         if(InputEvent!=null)
@@ -48,26 +68,6 @@ public class App : MonoBehaviour
         DataServer.OnApplicationQuit();
     }
     #endregion
-
-    //void OnGUI()
-    //{
-    //    if (GUI.Button(new Rect(10, 10, 150, 50), "send 1"))
-    //    {
-    //        DataServer.Send1(1);
-    //    }
-    //    if (GUI.Button(new Rect(10, 110, 150, 50), "send 2"))
-    //    {
-    //        DataServer.Send1(2);
-    //    }
-    //    if (GUI.Button(new Rect(10, 210, 150, 50), "send 3"))
-    //    {
-    //        DataServer.Send1(3);
-    //    }
-    //    if (GUI.Button(new Rect(10, 210, 150, 50), "send 4"))
-    //    {
-    //        DataServer.Send1(4);
-    //    }
-    //}  
 }
 public delegate void CallBack();
 public delegate void CallBack<T>(T t);
