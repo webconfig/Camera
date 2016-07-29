@@ -27,7 +27,6 @@ public  class NetHelp
 
         try
         {
-            Debug.Info("发送命令：" + type);
             _stream.Write(data, 0, data.Length);
             _stream.Flush();
         }

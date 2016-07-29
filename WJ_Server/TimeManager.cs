@@ -9,7 +9,7 @@ public class TimeManager
 
     public TimeManager()
     {
-        Timer time = new Timer();
+        Timer time = new Timer(0.02f);
         time.Elapsed += time_Elapsed;
         time.AutoReset = true;
         time.Enabled = true;

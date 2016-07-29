@@ -6,59 +6,63 @@ using System.Collections.Generic;
 public class Client
 {
     public long CustomerID = -199;
+    public long Ticks = -1;
     public string  pwd="&*%";
     public TcpClient _client;
     public NetworkStream _stream;
+    private List<byte> AddDatas;
     private List<byte> AllDatas;
+    private bool CanAdd=true,CanRun=true;
     private byte[] recieveData;
     private Int32 ReceiveBufferSize = 5 * 1024;
     public DataRecv DataServer;
     public FileRecv FileServer;
-    private System.DateTime ReadTime;
+    public System.DateTime StartTime;
+    private int State = 0;
 
     public Client(TcpClient client)
     {
         _client = client;
         _stream = client.GetStream();
         AllDatas = new List<byte>();
+        AddDatas = new List<byte>();
         recieveData = new byte[ReceiveBufferSize];
         DataServer = new DataRecv();
         FileServer = new FileRecv();
-        //TimeManager.GetInstance().TimeAction += Client_TimeAction;
-        new Thread(new ThreadStart(BeginRead)).Start();
+        StartTime = System.DateTime.Now;
+        Ticks = StartTime.Ticks;
+        BeginRead();
+        State = 1;
     }
 
-    void Client_TimeAction()
+    public void Disable()
     {
-        //TimeSpan ts = DateTime.Now - ReadTime;
-        //if(ts.TotalSeconds>20)
-        //{//超过20秒没读取到数据，触发一个心跳
-        //    if(ReadOutIndex<1)
-        //    {
-        //        ReadOutIndex = 1;
-        //        NetHelp.Send(0, _stream);
-        //    }
-        //    else
-        //    {//连续超过2次
-        //        ReadOutIndex = 0;
-        //        close();
-        //    }
-        //}
-    }
-
-    public void close()
-    {
-        TimeManager.GetInstance().TimeAction -= Client_TimeAction;
+        Debug.Info("Client--Disable");
         if (FileServer != null)
         {
             FileServer.Exit();
             FileServer = null;
         }
-        DataServer = null;
-        this._stream.Dispose();
-        this._stream = null;
-        Debug.Info("关闭链接");
-        ClientManager.GetInstance().RemoveClient(this);
+        if (DataServer != null)
+        {
+            DataServer = null;
+        }
+        if (_stream != null)
+        {
+            this._stream.Dispose();
+            this._stream = null;
+        }
+    }
+
+    public void close()
+    {
+        if (State != -1)
+        {
+            Debug.Info("【Client】--被动关闭");
+            State = -1;
+            Disable();
+            ClientManager.GetInstance().RemoveClient(this);
+        }
     }
 
     private void BeginRead()
@@ -78,7 +82,7 @@ public class Client
 
     private void OnReceiveCallback(IAsyncResult ar)
     {
-        ReadTime = System.DateTime.Now;
+        Debug.Info("【Client】--接收数据");
         int length = 0;
         try
         {
@@ -95,51 +99,61 @@ public class Client
             close();
             return;
         }
-        else if (length < 0)
+        else if (length > 0)
         {
-            Debug.Error("接收数据长度居然小于0：" + length);
-        }
-        else
-        {
+            CanAdd = false;
             //拷贝到缓存队列
             for (int i = 0; i < length; i++)
             {
-                AllDatas.Add(recieveData[i]);
+                AddDatas.Add(recieveData[i]);
             }
-            if (AllDatas.Count == 0)
+            CanAdd = true;
+        }
+        BeginRead();
+    }
+
+    public void Update()
+    {
+        if (!CanRun)
+        {
+            return;
+        }
+        CanRun = false;
+        if (CanAdd)
+        {
+            if (AddDatas.Count > 0)
             {
-                Debug.Error("AllDatas居然为0："+ length);
-                close();
-                return;
+                AllDatas.AddRange(AddDatas);
+                AddDatas.Clear();
             }
-            else
+        }
+        if (AllDatas.Count > 0)
+        {
+            //读取消息体的长度
+            int len = NetHelp.BytesToInt(AllDatas, 0);
+            //读取消息体内容
+            if (len + 4 <= AllDatas.Count)
             {
-                //读取消息体的长度
-                int len = NetHelp.BytesToInt(AllDatas, 0);
-                //Debug.Info("接收数据长度：" + length + "|" + len);
-                //读取消息体内容
-                if (len + 4 <= AllDatas.Count)
+                Debug.Info("【Client】--处理数据");
+                int tp = NetHelp.BytesToInt(AllDatas, 4);//操作命令
+                byte[] msgBytes = new byte[len - 4];
+                AllDatas.CopyTo(8, msgBytes, 0, msgBytes.Length);
+                AllDatas.RemoveRange(0, len + 4);
+                if (tp == 0)
                 {
-                    int tp = NetHelp.BytesToInt(AllDatas, 4);//操作命令
-                    byte[] msgBytes = new byte[len - 4];
-                    AllDatas.CopyTo(8, msgBytes, 0, msgBytes.Length);
-                    AllDatas.RemoveRange(0, len + 4);
-                    if (tp == 0)
-                    {
-                        Debug.Info("相应心跳");
-                    }
-                    if (tp < 10)
-                    {//传输数据
-                        DataServer.Action(tp, msgBytes, this);
-                    }
-                    else if (tp < 20)
-                    {//传输图片
-                        FileServer.Action(tp, msgBytes, _stream);
-                    }
+                    Debug.Info("相应心跳");
+                }
+                if (tp < 10)
+                {//传输数据
+                    DataServer.Action(tp, msgBytes, this);
+                }
+                else if (tp < 20)
+                {//传输图片
+                    FileServer.Action(tp, msgBytes, _stream);
                 }
             }
         }
-        new Thread(new ThreadStart(BeginRead)).Start();
+        CanRun = true;
     }
 }
 
