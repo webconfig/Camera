@@ -21,10 +21,12 @@ public class App : MonoBehaviour
         _instance = this;
         Data = new AppData();
         Data.Init();
+        //Develop();
     }
+    AndroidJavaObject android_help;
     void Start()
     {
-        Application.targetFrameRate = 20;
+        //Application.targetFrameRate = 20;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         DataServer = new MainClient();
         UI_Manager.Instance.Init();
@@ -33,10 +35,10 @@ public class App : MonoBehaviour
     }
     void LateUpdate()
     {
-
         if (NetWork==0)
         {
-            DataServer.LateUpdate();
+            DataServer.DealSend();
+            DataServer.DelRecvData();
             Data.DelData();
         }
         else if (NetWork == 2)
@@ -60,6 +62,13 @@ public class App : MonoBehaviour
         if(InputEvent!=null)
         {
             InputEvent();
+        }
+    }
+    void OnGUI()
+    {
+        if (GUI.Button(new Rect(50, 50, 50, 50), "Btn"))
+        {
+            gameObject.SetActive(false);
         }
     }
     #region 退出

@@ -14,9 +14,10 @@ public class MainClient
     public ClientStat State = ClientStat.ConnFail;
     public float ConnStartTime,ConnCD = 15;
     public float SendStartTime = 0, SendTimeOut=10;
-    public float ReLoginStartTime, ReLoginCD = 5;
+    public float ReLoginStartTime, ReLoginCD = 1;
     public float SendFileStartTime,SendFileTimeOut = 15;
     public float LoginStartTime = 0, LoginTimeOut = 10;
+    public float SendTime=0, SendCD = 2;
     public bool RttChange = false;
     private bool GetGoods = false;
     public int ConnIndex = 0;
@@ -25,6 +26,7 @@ public class MainClient
     public NetworkStream NetStream;
     public void Init()
     {
+        recieveData = new byte[ReceiveBufferSize];
         if (string.IsNullOrEmpty(App.Instance.Data.Set.DataServer) || string.IsNullOrEmpty(App.Instance.Data.Set.DataPort))
         {
             TipsManager.Instance.Error("服务器配置信息错误");
@@ -38,7 +40,7 @@ public class MainClient
             Debug.Log("==连接:" + App.Instance.Data.Set.DataServer + ":" + App.Instance.Data.Set.DataPort);
             client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Debug.Log(ex.ToString());
             TipsManager.Instance.Error("连接服务器失败，脱机工作！");
@@ -51,9 +53,13 @@ public class MainClient
         }
         NetStream = client.GetStream();
         State = ClientStat.Conn;
-        recieveData = new byte[ReceiveBufferSize];
-        NetStream.BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, NetStream);//在start里面开始异步接收消息
+        BeginRead();
     }
+    #region 连接登录
+    public LoginResponse LoginResult;
+    /// <summary>
+    /// 重连
+    /// </summary>
     private void ConnServer()
     {
         try
@@ -62,29 +68,26 @@ public class MainClient
             //Debug.Log("重新连接" + App.Instance.Data.Set.DataServer + ":" + App.Instance.Data.Set.DataPort);
             client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
         }
-        catch 
+        catch
         {
+            AddStr("连接服务器失败");
             return;
         }
+        AddStr("重新连接服务器");
         if (RttChangeEvent != null)
         {
             RttChangeEvent("网络：<color=#00ff00ff>连线</color>");
         }
         NetStream = client.GetStream();
-        recieveData = new byte[ReceiveBufferSize];
-        NetStream.ReadTimeout = 20;
-        NetStream.WriteTimeout = 20;
-        NetStream.BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, NetStream);//在start里面开始异步接收消息
-        RequestLogin();//请求登录 
+        BeginRead();
+        ReLogin();
     }
-    #region 登录
-    public LoginResponse LoginResult;
     /// <summary>
     /// 登陆
     /// </summary>
     public void RequestLogin()
     {
-        if(App.Instance.Data.Set.CustomerID==0||string.IsNullOrEmpty(App.Instance.Data.Set.Password))
+        if (App.Instance.Data.Set.CustomerID==0||string.IsNullOrEmpty(App.Instance.Data.Set.Password))
         {//没有用户名和密码不用登录
             Debug.Log("==没有用户名和密码不用登录==");
             TipsManager.Instance.Error("请先设置用户名和密码");
@@ -100,24 +103,17 @@ public class MainClient
         LoginStartTime = Time.time;
         Send<LoginRequest>(1, LoginModel);
     }
-
+    /// <summary>
+    /// 重新登录
+    /// </summary>
     public void ReLogin()
     {
         State = ClientStat.ReLogin;
         ReLoginStartTime = Time.time;
     }
-    #endregion
     /// <summary>
-    /// 请求Goods
+    /// 重新连接
     /// </summary>
-    public void RequestGoods()
-    {
-        Debug.Log("========请求Goods=======");
-        GoodsRequest request = new GoodsRequest();
-        request.CustomerID = App.Instance.Data.Set.CustomerID;
-        Send<GoodsRequest>(2, request);
-    }
-
     public void GotoConnFail()
     {
         State = ClientStat.ConnFail;
@@ -126,11 +122,234 @@ public class MainClient
         {
             NetStream.Close();
         }
-        client.Close();
-        ConnStartTime = Time.time;
+        if (client != null)
+        {
+            client.Close();
+        }
+    }
+    #endregion
+    /// <summary>
+    /// 请求Goods
+    /// </summary>
+    public void RequestGoods()
+    {
+        GoodsRequest request = new GoodsRequest();
+        request.CustomerID = App.Instance.Data.Set.CustomerID;
+        Send<GoodsRequest>(2, request);
     }
 
-    public void LateUpdate()
+    #region 传输文件
+    public int SendFileState = 0;
+    public WJ_Photo_Local CurrentFile;
+    private System.IO.FileStream fs;
+    private long lStartPos;
+    private static int BLOCK_SIZE = 1024 * 2;
+    Byte[] buffer = new Byte[BLOCK_SIZE];
+    int iBytes = 0;
+    public void GotoSendFile()
+    {
+        State = ClientStat.SendFile;
+        SendFileState = 0;
+    }
+    /// <summary>
+    /// 查找一个上传的图片
+    /// </summary>
+    public bool SelectFile()
+    {
+        CurrentFile = null;
+        if (App.Instance.Data.OldDatas.Count > 0)
+        {
+            for (int i = 0; i < App.Instance.Data.OldDatas.Count; i++)
+            {
+                if (App.Instance.Data.OldDatas[i].PhotosSubmit.Count > 0)
+                {//删除没有记录的文件
+                    CurrentFile = App.Instance.Data.OldDatas[i].PhotosSubmit.Values.First();
+                }
+            }
+        }
+        else
+        {
+            if (App.Instance.Data.CurrentData.PhotosSubmit.Count > 0)
+            {
+                CurrentFile = App.Instance.Data.CurrentData.PhotosSubmit.Values.First();
+            }
+        }
+
+        if (CurrentFile != null)
+        {
+            FileStartRequest request = new FileStartRequest();
+            request.name = CurrentFile.Data.PhotoPath;
+            request.CustomerID = CurrentFile.Data.CustomerID;
+            request.WJID = CurrentFile.Data.WJID;
+            request.AtTime =Convert.ToDateTime(CurrentFile.Data.AtTime).ToString("yyyy-MM-dd");
+            Send<FileStartRequest>(11, request);
+            AddStr("开始发送文件：" + CurrentFile.Data.PhotoPath);
+            return true;
+        }
+        return false;
+    }
+    public void CloseFile()
+    {
+        if (fs != null)
+        {
+            AddStr("关闭文件");
+            fs.Close();
+            fs = null;
+        }
+    }
+    #endregion
+
+    #region 接收和处理数据
+    /// <summary>
+    /// 接受数据
+    /// </summary>
+    /// <param name="ar"></param>
+    public void ReceiveMsg(IAsyncResult ar)//异步接收消息
+    {
+        int length = 0;
+        try
+        {
+            length = NetStream.EndRead(ar);
+        }
+        catch
+        {
+            GotoConnFail();
+            return;
+        }
+        if (length == 0)
+        {
+            GotoConnFail();
+            return;
+        }
+        else if (length > 0)
+        {
+            CanAdd = false;
+            //拷贝到缓存队列
+            for (int i = 0; i < length; i++)
+            {
+                AddDatas.Add(recieveData[i]);
+            }
+            CanAdd = true;
+        }
+        BeginRead();
+    }
+    private void BeginRead()
+    {
+        try
+        {
+            if (this.NetStream == null || !this.NetStream.CanRead)
+                return;
+            NetStream.BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, null);
+        }
+        catch
+        {
+            GotoConnFail();
+        }
+    }
+    /// <summary>
+    /// 处理数据
+    /// </summary>
+    public void DelRecvData()
+    {
+        if (CanAdd)
+        {
+            if (AddDatas.Count > 0)
+            {
+                AllDatas.AddRange(AddDatas);
+                AddDatas.Clear();
+            }
+        }
+        if (AllDatas.Count > 0)
+        {
+            //读取消息体的长度
+            int len = BytesToInt(AllDatas, 0);
+            //读取消息体内容
+            if (len + 4 <= AllDatas.Count)
+            {
+                int tp = BytesToInt(AllDatas, 4);//操作命令
+                byte[] msgBytes = new byte[len - 4];
+                AllDatas.CopyTo(8, msgBytes, 0, msgBytes.Length);
+                AllDatas.RemoveRange(0, len + 4);
+                #region 具体命令
+                if (tp == 0)
+                {
+                    Send(0);//相应服务器的心跳包
+                }
+                else if (tp == 1)
+                {//登陆返回结果
+                    LoginResponse ResponseModel;
+                    RecvData<LoginResponse>(msgBytes, out ResponseModel);
+                    LoginResult = ResponseModel;
+                    State = ClientStat.LoginBack;
+                }
+                else
+                {
+                    if (State != ClientStat.Logining && State != ClientStat.LoginBack && State != ClientStat.LoginFail)
+                    { //登录过程中不接受其他消息
+                        if (tp == 2)
+                        {//Goods返回
+                            GoodsResponse GoodsResponseModel;
+                            try
+                            {
+                                RecvData<GoodsResponse>(msgBytes, out GoodsResponseModel);
+                                Debug.Log("===Goods返回结果:" + GoodsResponseModel.result.Count);
+                                App.Instance.Data.AddGoods(GoodsResponseModel);
+                            }
+                            catch { }
+                            GetGoods = true;
+                            GotoSend();
+                        }
+                        else if (tp == 3)
+                        {//返回Record
+                            RecordResponse RecordResponseModel;
+                            RecvData<RecordResponse>(msgBytes, out RecordResponseModel);
+                            if (RecordResponseModel.record_id == -1)
+                            {
+                                AddStr("传输一个Record发生错误");
+                            }
+                            else
+                            {
+                                App.Instance.Data.AddSubmitRespinse(RecordResponseModel);
+                            }
+                        }
+                        else if (tp == 11)
+                        {//开始发送文件
+                            FileResponse ResponseFile;
+                            RecvData<FileResponse>(msgBytes, out ResponseFile);
+                            lStartPos = ResponseFile.Result;
+                            SendFileState = 2;
+                        }
+                        else if (tp == 12)
+                        {//接受完成文件
+                            SendFileState = 4;
+                        }
+                    }
+                }
+                #endregion
+            }
+        }
+        if (StrChange)
+        {
+            StrChange = false;
+            if (RunStrsChangeEvent != null)
+            {
+                string result = "";
+                for (int i = 0; i < RunStrs.Count; i++)
+                {
+                    result = string.Concat(result, RunStrs[i]) + "\n";
+                }
+                RunStrsChangeEvent(result.ToString());
+            }
+        }
+    }
+    public void GotoSend()
+    {
+        State = ClientStat.SendDataStart;
+        SendTime = Time.time;
+    }
+    #endregion
+
+    public void DealSend()
     {
         switch (State)
         {
@@ -140,15 +359,17 @@ public class MainClient
                 {
                     return;
                 }
-                if (ConnIndex==0)
+                if (ConnIndex == 0)
                 {
                     ConnIndex = 1;
                     ConnStartTime = Time.time;
+                    AddStr("重连服务器");
                     ConnServer();
                 }
-                else if(Time.time - ConnStartTime >= ConnCD)
+                else if (Time.time - ConnStartTime >= ConnCD)
                 {
                     ConnStartTime = Time.time;
+                    AddStr("重连服务器");
                     ConnServer();
                 }
                 #endregion
@@ -163,6 +384,7 @@ public class MainClient
                 }
                 break;
             case ClientStat.LoginBack://登陆返回结果
+                #region 完成登录
                 if (LoginResult.Result != "0")
                 {//成功
                     if (App.Instance.Data.Set.CheckCode)
@@ -170,7 +392,7 @@ public class MainClient
                         if (App.Instance.Data.Code != LoginResult.Result)
                         {
                             //UnityEngine.Analytics.TrackEvent("Click URL Website", "app/help/website");
-                            Application.OpenURL("http://"+LoginResult.Url);
+                            Application.OpenURL("http://" + LoginResult.Url);
                         }
                     }
                     if (ShowLoginOkTip)
@@ -186,7 +408,7 @@ public class MainClient
                     }
                     else
                     {
-                        State = ClientStat.SendData;
+                        GotoSend();
                     }
                 }
                 else
@@ -194,24 +416,32 @@ public class MainClient
                     TipsManager.Instance.Error("用户ID或者用户密码错误");
                     State = ClientStat.LoginFail;
                 }
+                #endregion
                 break;
-            case ClientStat.ReLogin:
+            case ClientStat.ReLogin://重新登录
                 if (Time.time - ReLoginStartTime >= ReLoginCD)
                 {
+                    AddStr("重新登录");
                     CloseFile();
                     RequestLogin();
                 }
                 break;
-            case ClientStat.SendData:
+            case ClientStat.SendDataStart:
+                if(Time.time-SendTime>=SendCD)
+                {
+                    State = ClientStat.SendData;
+                }
+                break;
+            case ClientStat.SendData://发送记录
                 #region SendData
                 if (App.Instance.Data.OldDatas.Count > 0)
                 {
-                    if(App.Instance.Data.OldDatas[0].Records_Submit.Count>0)
+                    if (App.Instance.Data.OldDatas[0].Records_Submit.Count > 0)
                     {
                         AddStr("发送历史数据记录1条");
                         State = ClientStat.Sending;
                         SendStartTime = Time.time;
-                        Send<WJ_Record>(4,App.Instance.Data.OldDatas[0].Records_Submit.Values.First().Data);
+                        Send<WJ_Record>(4, App.Instance.Data.OldDatas[0].Records_Submit.Values.First().Data);
                     }
                 }
                 else if (App.Instance.Data.CurrentData.Records_Submit.Count > 0)
@@ -223,16 +453,15 @@ public class MainClient
                 }
                 else
                 {//没有要发送的数据后，开始发送图片
-                    GotoSendFile();
+                   GotoSendFile();
                 }
                 #endregion
                 break;
-            case ClientStat.SendFile:
+            case ClientStat.SendFile://发送文件
                 #region SendFile
                 switch (SendFileState)
                 {
                     case 0:
-
                         if (SelectFile())
                         {
                             SendFileStartTime = Time.time;
@@ -240,7 +469,8 @@ public class MainClient
                         }
                         else
                         {
-                            State = ClientStat.SendData;//没有发送的文件，跳转到发送数据
+
+                            GotoSend();//没有发送的文件，跳转到发送数据
                         }
 
                         break;
@@ -249,7 +479,6 @@ public class MainClient
                         {//超时
                             AddStr("开始发送文件超时");
                             CloseFile();
-                            
                             GotoConnFail();
                         }
                         break;
@@ -283,7 +512,7 @@ public class MainClient
                         AddStr("完成文件：" + CurrentFile.Data.PhotoPath);
                         CloseFile();//关闭文件
                         App.Instance.Data.PhotoSubmitOver(CurrentFile);//更新xml信息
-                        State = ClientStat.SendData;//发送完成，去发送数据
+                        GotoSend();//发送完成，去发送数据
                         break;
                 }
                 #endregion
@@ -298,156 +527,8 @@ public class MainClient
         }
     }
 
-    #region 传输文件
-    public int SendFileState = 0;
-    public WJ_Photo_Local CurrentFile;
-    private System.IO.FileStream fs;
-    private long lStartPos;
-    private static int BLOCK_SIZE = 1024 * 2;
-    Byte[] buffer = new Byte[BLOCK_SIZE];
-    int iBytes = 0;
-    public void GotoSendFile()
-    {
-        State = ClientStat.SendFile;
-        SendFileStartTime = Time.time;
-        SendFileState = 0;
-    }
-    /// <summary>
-    /// 查找一个上传的图片
-    /// </summary>
-    public bool SelectFile()
-    {
-        CurrentFile = null;
-        if (App.Instance.Data.OldDatas.Count > 0)
-        {
-            for (int i = 0; i < App.Instance.Data.OldDatas.Count; i++)
-            {
-                if (App.Instance.Data.OldDatas[i].PhotosSubmit.Count > 0)
-                {//删除没有记录的文件
-                    CurrentFile = App.Instance.Data.OldDatas[i].PhotosSubmit.Values.First();
-                }
-            }
-        }
-        else
-        {
-            if (App.Instance.Data.CurrentData.PhotosSubmit.Count > 0)
-            {//删除没有记录的文件
-                CurrentFile = App.Instance.Data.CurrentData.PhotosSubmit.Values.First();
-            }
-        }
-
-        if (CurrentFile != null)
-        {
-            FileStartRequest request = new FileStartRequest();
-            request.name = CurrentFile.Data.PhotoPath;
-            request.CustomerID = CurrentFile.Data.CustomerID;
-            request.WJID = CurrentFile.Data.WJID;
-            request.AtTime =Convert.ToDateTime(CurrentFile.Data.AtTime).ToString("yyyy-MM-dd");
-            Send<FileStartRequest>(11, request);
-            AddStr("开始发送文件：" + CurrentFile.Data.PhotoPath);
-            return true;
-        }
-        return false;
-    }
-    public void CloseFile()
-    {
-        if (fs != null)
-        {
-            fs.Close();
-        }
-    }
-    #endregion
-
-    /// <summary>
-    /// 接受数据
-    /// </summary>
-    /// <param name="ar"></param>
-    public void ReceiveMsg(IAsyncResult ar)//异步接收消息
-    {
-        NetworkStream stream = (NetworkStream)ar.AsyncState;
-        stream.EndRead(ar);
-        //读取消息体的长度
-        byte[] lenByte = new byte[4];
-        System.Array.Copy(recieveData, lenByte, 4);
-        int len = BytesToInt(lenByte, 0);
-        //读取消息体内容
-        byte[] msgByte = new byte[len];
-        System.Array.ConstrainedCopy(recieveData, 4, msgByte, 0, len);
-
-        byte[] ResponseTypeByte = new byte[4];
-        System.Array.Copy(msgByte, ResponseTypeByte, 4);
-        int tp = BytesToInt(ResponseTypeByte, 0);
-
-        byte[] DataByte = new byte[msgByte.Length - 4];
-        System.Array.ConstrainedCopy(msgByte, 4, DataByte, 0, DataByte.Length);
-        //==========================================================================
-        if (tp == 0)
-        {
-            Send(0);//相应服务器的心跳包
-        }
-        else if (tp == 1)
-        {//登陆返回结果
-            LoginResponse ResponseModel;
-            RecvData<LoginResponse>(DataByte, out ResponseModel);
-            LoginResult = ResponseModel;
-            State = ClientStat.LoginBack;
-        }
-        else
-        {
-            if (State != ClientStat.Logining && State != ClientStat.LoginBack && State != ClientStat.LoginFail)
-            { //登录过程中不接受其他消息
-                if (tp == 2)
-                {//Goods返回
-                    GoodsResponse GoodsResponseModel;
-                    try
-                    {
-                        RecvData<GoodsResponse>(DataByte, out GoodsResponseModel);
-                        Debug.Log("===Goods返回结果:" + GoodsResponseModel.result.Count);
-                        App.Instance.Data.AddGoods(GoodsResponseModel);
-                    }
-                    catch { }
-                    GetGoods = true;
-                    State = ClientStat.SendData;
-                }
-                else if (tp == 3)
-                {//返回Record
-                    RecordResponse RecordResponseModel;
-                    RecvData<RecordResponse>(DataByte, out RecordResponseModel);
-                    if (RecordResponseModel.record_id == -1)
-                    {
-                        AddStr("传输一个Record发生错误");
-                    }
-                    else
-                    {
-                        App.Instance.Data.AddSubmitRespinse(RecordResponseModel);
-                    }
-                }
-                else if (tp == 11)
-                {//开始发送文件
-                    FileResponse ResponseFile;
-                    RecvData<FileResponse>(DataByte, out ResponseFile);
-                    lStartPos = ResponseFile.Result;
-                    SendFileState = 2;
-                }
-                else if (tp == 12)
-                {//接受完成文件
-                    SendFileState = 4;
-                }
-            }
-        }
-        try
-        {
-            stream.BeginRead(recieveData, 0, ReceiveBufferSize, ReceiveMsg, stream);
-        }
-        catch
-        {
-            Debug.Log("Recv Error");
-            GotoConnFail();
-        }
-    }
-
     #region 退出
-    public  void OnApplicationQuit()
+    public void OnApplicationQuit()
     {
         if (NetStream != null)
         {
@@ -458,7 +539,7 @@ public class MainClient
     #endregion
 
     #region 工具方法
-    public void Send<T>(int type,  T t)
+    public  void Send<T>(int type,  T t)
     {
         byte[] msg;
         using (MemoryStream ms = new MemoryStream())
@@ -487,7 +568,7 @@ public class MainClient
             GotoConnFail();
         }
     }
-    public void Send(int type)
+    public  void Send(int type)
     {
         byte[] type_value = IntToBytes(type);
         byte[] Length_value = IntToBytes(type_value.Length);
@@ -506,7 +587,7 @@ public class MainClient
             GotoConnFail();
         }
     }
-    public void RecvData<T>(byte[] RecvDataByte,out T t)
+    public static void RecvData<T>(byte[] RecvDataByte,out T t)
     {
         using (MemoryStream ms = new MemoryStream())
         {
@@ -515,8 +596,7 @@ public class MainClient
             t = Serializer.Deserialize<T>(ms);
         }
     }
-
-    public  int BytesToInt(byte[] data, int offset)
+    public static int BytesToInt(List<byte> data, int offset)
     {
         int num = 0;
         for (int i = offset; i < offset + 4; i++)
@@ -526,7 +606,17 @@ public class MainClient
         }
         return num;
     }
-    public  byte[] IntToBytes(int num)
+    public static int BytesToInt(byte[] data, int offset)
+    {
+        int num = 0;
+        for (int i = offset; i < offset + 4; i++)
+        {
+            num <<= 8;
+            num |= (data[i] & 0xff);
+        }
+        return num;
+    }
+    public static byte[] IntToBytes(int num)
     {
         byte[] bytes = new byte[4];
         for (int i = 0; i < 4; i++)
@@ -541,6 +631,7 @@ public class MainClient
     public List<string> RunStrs=new List<string>();
     public int RunStrsMax = 10;
     public event CallBack<string> RunStrsChangeEvent;
+    private bool StrChange = false;
     public void AddStr(string str)
     {
         if(RunStrs.Count>=RunStrsMax)
@@ -548,19 +639,14 @@ public class MainClient
             RunStrs.RemoveAt(0);
         }
         RunStrs.Add(str);
-        if(RunStrsChangeEvent!=null)
-        {
-            string result="";
-            for (int i = 0; i < RunStrs.Count; i++)
-            {
-                result = string.Concat(result, RunStrs[i]) + "\n";
-            }
-            RunStrsChangeEvent(result.ToString());
-        }
+        StrChange = true;
     }
     #endregion
 
     public event CallBack<string> RttChangeEvent;
+    private List<byte> AddDatas=new List<byte>();
+    private List<byte> AllDatas = new List<byte>();
+    private bool CanAdd = true;
 }
 public enum ClientStat
 {
@@ -571,7 +657,9 @@ public enum ClientStat
     LoginBack,
     LoginFail,
     LoingOk,
+    SendDataStart,
     SendData,
+    SendFileStart,
     SendFile,
     Sending,
 }

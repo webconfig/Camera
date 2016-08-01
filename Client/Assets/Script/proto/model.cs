@@ -129,85 +129,92 @@ namespace google.protobuf
   {
     public WJ_Record() {}
     
+    private long _SeqID;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"SeqID", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    public long SeqID
+    {
+      get { return _SeqID; }
+      set { _SeqID = value; }
+    }
     private long _CustomerID;
-    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"CustomerID", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"CustomerID", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
     public long CustomerID
     {
       get { return _CustomerID; }
       set { _CustomerID = value; }
     }
     private string _WJID;
-    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"WJID", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"WJID", DataFormat = global::ProtoBuf.DataFormat.Default)]
     public string WJID
     {
       get { return _WJID; }
       set { _WJID = value; }
     }
     private long _ID;
-    [global::ProtoBuf.ProtoMember(3, IsRequired = true, Name=@"ID", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::ProtoBuf.ProtoMember(4, IsRequired = true, Name=@"ID", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
     public long ID
     {
       get { return _ID; }
       set { _ID = value; }
     }
     private string _WorkSpace;
-    [global::ProtoBuf.ProtoMember(4, IsRequired = true, Name=@"WorkSpace", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(5, IsRequired = true, Name=@"WorkSpace", DataFormat = global::ProtoBuf.DataFormat.Default)]
     public string WorkSpace
     {
       get { return _WorkSpace; }
       set { _WorkSpace = value; }
     }
     private string _GoodsName;
-    [global::ProtoBuf.ProtoMember(5, IsRequired = true, Name=@"GoodsName", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(6, IsRequired = true, Name=@"GoodsName", DataFormat = global::ProtoBuf.DataFormat.Default)]
     public string GoodsName
     {
       get { return _GoodsName; }
       set { _GoodsName = value; }
     }
     private string _BeginTime;
-    [global::ProtoBuf.ProtoMember(6, IsRequired = true, Name=@"BeginTime", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(7, IsRequired = true, Name=@"BeginTime", DataFormat = global::ProtoBuf.DataFormat.Default)]
     public string BeginTime
     {
       get { return _BeginTime; }
       set { _BeginTime = value; }
     }
     private string _EndTime;
-    [global::ProtoBuf.ProtoMember(7, IsRequired = true, Name=@"EndTime", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(8, IsRequired = true, Name=@"EndTime", DataFormat = global::ProtoBuf.DataFormat.Default)]
     public string EndTime
     {
       get { return _EndTime; }
       set { _EndTime = value; }
     }
     private string _BgeinPhotoID;
-    [global::ProtoBuf.ProtoMember(8, IsRequired = true, Name=@"BgeinPhotoID", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(9, IsRequired = true, Name=@"BgeinPhotoID", DataFormat = global::ProtoBuf.DataFormat.Default)]
     public string BgeinPhotoID
     {
       get { return _BgeinPhotoID; }
       set { _BgeinPhotoID = value; }
     }
     private string _EndPhotoID;
-    [global::ProtoBuf.ProtoMember(9, IsRequired = true, Name=@"EndPhotoID", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::ProtoBuf.ProtoMember(10, IsRequired = true, Name=@"EndPhotoID", DataFormat = global::ProtoBuf.DataFormat.Default)]
     public string EndPhotoID
     {
       get { return _EndPhotoID; }
       set { _EndPhotoID = value; }
     }
     private float _longitude;
-    [global::ProtoBuf.ProtoMember(10, IsRequired = true, Name=@"longitude", DataFormat = global::ProtoBuf.DataFormat.FixedSize)]
+    [global::ProtoBuf.ProtoMember(11, IsRequired = true, Name=@"longitude", DataFormat = global::ProtoBuf.DataFormat.FixedSize)]
     public float longitude
     {
       get { return _longitude; }
       set { _longitude = value; }
     }
     private float _Latitude;
-    [global::ProtoBuf.ProtoMember(11, IsRequired = true, Name=@"Latitude", DataFormat = global::ProtoBuf.DataFormat.FixedSize)]
+    [global::ProtoBuf.ProtoMember(12, IsRequired = true, Name=@"Latitude", DataFormat = global::ProtoBuf.DataFormat.FixedSize)]
     public float Latitude
     {
       get { return _Latitude; }
       set { _Latitude = value; }
     }
     private int _Mode;
-    [global::ProtoBuf.ProtoMember(12, IsRequired = true, Name=@"Mode", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
+    [global::ProtoBuf.ProtoMember(13, IsRequired = true, Name=@"Mode", DataFormat = global::ProtoBuf.DataFormat.TwosComplement)]
     public int Mode
     {
       get { return _Mode; }

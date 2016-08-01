@@ -12,4 +12,6 @@
     public float CD = 3;
     public float JSCD = 600;
     public int Day=7;
+    public int JCType = 1;
+    public float CD1 = 3;
 }

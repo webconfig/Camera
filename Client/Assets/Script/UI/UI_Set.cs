@@ -9,8 +9,8 @@ using System.Text.RegularExpressions;
 public class UI_Set : UI_Base
 {
     public Button Btn_OK, Btn_Back;
-    public InputField Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_CD, Input_JSCD,Input_Day;
-    public Toggle Tog_JC, Tog_JCJS;
+    public InputField Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_CD, Input_CD1, Input_JSCD,Input_Day;
+    public Toggle Tog_JC, Tog_JCJS,Tog_JC_One,Tog_JC_Two;
     private WJ_Set Set;
 
     public override void UI_Start()
@@ -28,6 +28,8 @@ public class UI_Set : UI_Base
         Input_CD.text = Set.CD.ToString();
         Input_JSCD.text = (Set.JSCD / 60.0f).ToString();
         Input_Day.text = Set.Day.ToString();
+        Input_CD1.text = Set.CD1.ToString();
+        //Tog_Develop.isOn = Set.Develop;
         if (App.Instance.Data.Set.RunType == 0)
         {
             Tog_JC.isOn = true;
@@ -37,6 +39,17 @@ public class UI_Set : UI_Base
         {
             Tog_JC.isOn = false;
             Tog_JCJS.isOn = true;
+        }
+
+        if (App.Instance.Data.Set.JCType == 1)
+        {
+            Tog_JC_One.isOn = true;
+            Tog_JC_Two.isOn = false;
+        }
+        else
+        {
+            Tog_JC_One.isOn = false;
+            Tog_JC_Two.isOn = true;
         }
     }
 
@@ -50,20 +63,31 @@ public class UI_Set : UI_Base
     private void Btn_OK_Click()
     {
         bool relogin = false;
-        string WJ_Code,Place, DataServer,DataPort, CustomerIDStr, Password,CDStr,CDJSStr,DayStr;
+        string WJ_Code,Place, DataServer,DataPort, CustomerIDStr, Password,CDStr, CD1Str, CDJSStr,DayStr;
         int data_port, Day;
         long CustomerID;
-        float CD,CDJS;
+        float CD,CD1,CDJS;
 
         CDStr = Input_CD.text.Trim();
         if (string.IsNullOrEmpty(CDStr))
         {
-            TipsManager.Instance.Error("计次时间间隔为空！");
+            TipsManager.Instance.Error("两次计次间隔为空！");
             return;
         }
         if (!float.TryParse(CDStr, out CD))
         {
-            TipsManager.Instance.Error("计次时间间隔填写错误！");
+            TipsManager.Instance.Error("两次计次间隔填写错误！");
+            return;
+        }
+        CD1Str = Input_CD1.text.Trim();
+        if (string.IsNullOrEmpty(CD1Str))
+        {
+            TipsManager.Instance.Error("一次次计次间隔为空！");
+            return;
+        }
+        if (!float.TryParse(CD1Str, out CD1))
+        {
+            TipsManager.Instance.Error("一次次计次间隔填写错误！");
             return;
         }
         CDJSStr = Input_JSCD.text.Trim();
@@ -168,9 +192,10 @@ public class UI_Set : UI_Base
         Set.Password = Password;
         Set.Day = Day;
         Set.RunType = Tog_JC.isOn ? 0 : 1;
-
-
+        Set.JCType = Tog_JC_One.isOn ? 1 : 2;
+        Set.CD1 = CD1;
         App.Instance.Data.SaveSet();
+        //App.Instance.Develop();
         TipsManager.Instance.Info("设置成功！");
         UI_Manager.Instance.Back();
         if(relogin)

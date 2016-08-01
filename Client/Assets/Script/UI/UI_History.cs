@@ -3,13 +3,17 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 public class UI_History : UI_Base
 {
-    public Button Btn_Back;
+    public Button Btn_Back,Btn_Before,Btn_Next;
     public UI_Control_Table table;
     public Text TxtTotal;
+    public int index = 0;
+
     public override void UI_Start()
     {
         Btn_Back.onClick.AddListener(Btn_Back_Click);
-        ShowData(App.Instance.Data.CurrentData);
+        Btn_Before.onClick.AddListener(Btn_Before_Click);
+        Btn_Before.onClick.AddListener(Btn_Next_Click);
+        ShowData(App.Instance.Data.HistoryData[0]);
     }
     private void ShowData(LocalXmlData xd)
     {
@@ -42,5 +46,21 @@ public class UI_History : UI_Base
     private void Btn_Back_Click()
     {
         UI_Manager.Instance.Back();
+    }
+    private void Btn_Before_Click()
+    {
+        if (index < App.Instance.Data.HistoryData.Count-1)
+        {
+            index++;
+            ShowData(App.Instance.Data.HistoryData[index]);
+        }
+    }
+    private void Btn_Next_Click()
+    {
+        if (index >0)
+        {
+            index--;
+            ShowData(App.Instance.Data.HistoryData[index]);
+        }
     }
 }
