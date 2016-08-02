@@ -388,7 +388,7 @@ public class MainClient
 
     public void DealSend(bool NotSend)
     {
-
+       
         if (State == ClientStat.ConnFail)
         {//连接失败
             if (NotSend) { return; }
