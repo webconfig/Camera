@@ -121,6 +121,7 @@ public class DataRecv
                 int num = 0;
                 if (model_record == null)
                 {
+                    #region 添加
                     Dos.Model.WJ_Record record = new Dos.Model.WJ_Record
                     {
                         CustomerID = request_record.CustomerID,
@@ -146,9 +147,11 @@ public class DataRecv
                     {
                         Debug.Info("添加Record：" + request_record.ID + "失败");
                     }
+                    #endregion
                 }
                 else
                 {
+                    #region 修改
                     model_record.EndPhotoID = request_record.EndPhotoID;
                     model_record.EndTime = EndTime;
                     num = Db.Context.Update<Dos.Model.WJ_Record>(model_record);
@@ -160,10 +163,11 @@ public class DataRecv
                     {
                         Debug.Info("修改Record：" + model_record.ID + "失败");
                     }
+                    #endregion
                 }
                 if (num == 1)
                 {
-                    response_record.record_id = request_record.ID;
+                    response_record.record_id = request_record.SeqID;
                 }
                 else
                 {

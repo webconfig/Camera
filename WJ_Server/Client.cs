@@ -82,7 +82,7 @@ public class Client
 
     private void OnReceiveCallback(IAsyncResult ar)
     {
-        Debug.Info("【Client】--接收数据");
+        //Debug.Info("【Client】--接收数据");
         int length = 0;
         try
         {
@@ -134,7 +134,7 @@ public class Client
             //读取消息体内容
             if (len + 4 <= AllDatas.Count)
             {
-                Debug.Info("【Client】--处理数据");
+                //Debug.Info("【Client】--处理数据");
                 int tp = NetHelp.BytesToInt(AllDatas, 4);//操作命令
                 byte[] msgBytes = new byte[len - 4];
                 AllDatas.CopyTo(8, msgBytes, 0, msgBytes.Length);
