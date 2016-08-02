@@ -20,9 +20,7 @@ public class MainClient
     public float SendTime=0, SendCD = 2;
     public bool RttChange = false;
     private bool GetGoods = false;
-    public int ConnIndex = 0;
     public bool ShowLoginOkTip = true;
-    public double Rtt;
     public NetworkStream NetStream;
     public void Init()
     {
@@ -38,22 +36,40 @@ public class MainClient
         try
         {
             Debug.Log("==连接:" + App.Instance.Data.Set.DataServer + ":" + App.Instance.Data.Set.DataPort);
-            client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
+            //client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
+            client.BeginConnect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort),
+                               new AsyncCallback(CallBackMethod), null);
         }
-        catch (Exception ex)
+        catch
         {
-            Debug.Log(ex.ToString());
             TipsManager.Instance.Error("连接服务器失败，脱机工作！");
             GotoConnFail();
             return;
         }
-        if (RttChangeEvent != null)
+        
+    }
+    private void CallBackMethod(IAsyncResult asyncresult)
+    {
+        try
         {
-            RttChangeEvent("网络：<color=#00ff00ff>连线</color>");
+            if (client.Client != null)
+            {
+                client.EndConnect(asyncresult);
+                State = ClientStat.Conn;
+            }
+            else
+            {
+                TipsManager.Instance.Error("连接服务器失败，脱机工作！");
+                GotoConnFail();
+                return;
+            }
         }
-        NetStream = client.GetStream();
-        State = ClientStat.Conn;
-        BeginRead();
+        catch
+        {
+            TipsManager.Instance.Error("连接服务器失败，脱机工作！");
+            GotoConnFail();
+            return;
+        }
     }
     #region 连接登录
     public LoginResponse LoginResult;
@@ -66,21 +82,39 @@ public class MainClient
         {
             client = new TcpClient();
             //Debug.Log("重新连接" + App.Instance.Data.Set.DataServer + ":" + App.Instance.Data.Set.DataPort);
-            client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
+            //client.BeginConnect()
+            //client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
+            client.BeginConnect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort),
+                               new AsyncCallback(ReConnCallBackMethod), null);
         }
         catch
         {
             AddStr("连接服务器失败");
             return;
         }
-        AddStr("重新连接服务器");
-        if (RttChangeEvent != null)
+    }
+    private void ReConnCallBackMethod(IAsyncResult asyncresult)
+    {
+        try
         {
-            RttChangeEvent("网络：<color=#00ff00ff>连线</color>");
+            if (client.Client != null)
+            {
+                client.EndConnect(asyncresult);
+                State = ClientStat.Conn;
+            }
+            else
+            {
+                AddStr("连接服务器失败");
+                GotoConnFail();
+                return;
+            }
         }
-        NetStream = client.GetStream();
-        BeginRead();
-        ReLogin();
+        catch
+        {
+            AddStr("连接服务器失败");
+            GotoConnFail();
+            return;
+        }
     }
     /// <summary>
     /// 登陆
@@ -117,14 +151,15 @@ public class MainClient
     public void GotoConnFail()
     {
         State = ClientStat.ConnFail;
-        ConnIndex = 0;
         if (NetStream != null)
         {
             NetStream.Close();
+            NetStream = null;
         }
         if (client != null)
         {
             client.Close();
+            client = null;
         }
     }
     #endregion
@@ -192,7 +227,6 @@ public class MainClient
     {
         if (fs != null)
         {
-            AddStr("关闭文件");
             fs.Close();
             fs = null;
         }
@@ -288,15 +322,18 @@ public class MainClient
                     { //登录过程中不接受其他消息
                         if (tp == 2)
                         {//Goods返回
-                            GoodsResponse GoodsResponseModel;
-                            try
+                            if (!GetGoods)
                             {
-                                RecvData<GoodsResponse>(msgBytes, out GoodsResponseModel);
-                                Debug.Log("===Goods返回结果:" + GoodsResponseModel.result.Count);
-                                App.Instance.Data.AddGoods(GoodsResponseModel);
+                                GoodsResponse GoodsResponseModel;
+                                try
+                                {
+                                    RecvData<GoodsResponse>(msgBytes, out GoodsResponseModel);
+                                    Debug.Log("===Goods返回结果:" + GoodsResponseModel.result.Count);
+                                    App.Instance.Data.AddGoods(GoodsResponseModel);
+                                }
+                                catch { }
+                                GetGoods = true;
                             }
-                            catch { }
-                            GetGoods = true;
                             GotoSend();
                         }
                         else if (tp == 3)
@@ -349,41 +386,57 @@ public class MainClient
     }
     #endregion
 
-    public void DealSend()
+    public void DealSend(bool NotSend)
     {
-        switch (State)
+
+        if (State == ClientStat.ConnFail)
+        {//连接失败
+            if (NotSend) { return; }
+            #region ConnFail
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                return;
+            }
+            if (Time.time - ConnStartTime >= ConnCD)
+            {
+                ConnStartTime = Time.time;
+                AddStr("重连服务器");
+                ConnServer();
+            }
+            #endregion
+        }
+        else
         {
-            case ClientStat.ConnFail://连接失败
-                #region ConnFail
-                if (Application.internetReachability == NetworkReachability.NotReachable)
+            if (Time.time - ConnStartTime >= 5)
+            {//超过5秒链接正常，下次断线就马上链接
+                ConnStartTime = -100;
+            }
+            if (State == ClientStat.Conn)
+            {//连接成功,开始登录
+                if (NotSend) { return; }
+                #region 连接成功
+                if (RttChangeEvent != null)
                 {
-                    return;
+                    RttChangeEvent("网络：<color=#00ff00ff>连线</color>");
                 }
-                if (ConnIndex == 0)
-                {
-                    ConnIndex = 1;
-                    ConnStartTime = Time.time;
-                    AddStr("重连服务器");
-                    ConnServer();
-                }
-                else if (Time.time - ConnStartTime >= ConnCD)
-                {
-                    ConnStartTime = Time.time;
-                    AddStr("重连服务器");
-                    ConnServer();
-                }
+                NetStream = client.GetStream();
+                State = ClientStat.Conn;
+                BeginRead();
+                AddStr("连接到服务器");
+                RequestLogin();//请求登录
                 #endregion
-                break;
-            case ClientStat.Conn://连接成功
-                RequestLogin();//请求登录 
-                break;
-            case ClientStat.Logining://登陆中
+            }
+            else if (State == ClientStat.Logining)
+            {//登陆中
+                #region 登录超时
                 if (Time.time - LoginStartTime >= LoginTimeOut)
                 {//超时
                     GotoConnFail();
                 }
-                break;
-            case ClientStat.LoginBack://登陆返回结果
+                #endregion
+            }
+            else if (State == ClientStat.LoginBack)
+            {//登陆返回结果
                 #region 完成登录
                 if (LoginResult.Result != "0")
                 {//成功
@@ -417,22 +470,32 @@ public class MainClient
                     State = ClientStat.LoginFail;
                 }
                 #endregion
-                break;
-            case ClientStat.ReLogin://重新登录
+            }
+            else if (State == ClientStat.ReLogin)
+            {//重新登录
+                if (NotSend) { return; }
+                #region 重新登录
                 if (Time.time - ReLoginStartTime >= ReLoginCD)
                 {
                     AddStr("重新登录");
                     CloseFile();
                     RequestLogin();
                 }
-                break;
-            case ClientStat.SendDataStart:
-                if(Time.time-SendTime>=SendCD)
+                #endregion
+            }
+            else if (State == ClientStat.SendDataStart)
+            {
+                if (NotSend) { return; }
+                #region 开始发送数据
+                if (Time.time - SendTime >= SendCD)
                 {
                     State = ClientStat.SendData;
                 }
-                break;
-            case ClientStat.SendData://发送记录
+                #endregion
+            }
+            else if (State == ClientStat.SendData)
+            {//发送记录
+                if (NotSend) { return; }
                 #region SendData
                 if (App.Instance.Data.OldDatas.Count > 0)
                 {
@@ -453,11 +516,12 @@ public class MainClient
                 }
                 else
                 {//没有要发送的数据后，开始发送图片
-                   GotoSendFile();
+                    GotoSendFile();
                 }
                 #endregion
-                break;
-            case ClientStat.SendFile://发送文件
+            }
+            else if (State == ClientStat.SendFile)
+            {//发送文件
                 #region SendFile
                 switch (SendFileState)
                 {
@@ -516,14 +580,17 @@ public class MainClient
                         break;
                 }
                 #endregion
-                break;
-            case ClientStat.Sending://用于发送请求物品和发送数据的超时
+            }
+            else if (State == ClientStat.Sending)
+            {//用于发送请求物品和发送数据的超时
+                #region 发送超时
                 if (Time.time - SendStartTime >= SendTimeOut)
                 {//超时
                     AddStr("发送数据超时");
                     GotoConnFail();
                 }
-                break;
+                #endregion
+            }
         }
     }
 
