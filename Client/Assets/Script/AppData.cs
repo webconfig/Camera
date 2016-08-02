@@ -136,7 +136,7 @@ public class AppData
                 ffs.Sort((s1, s2) => DateTime.Compare(s1.CreationTime, s2.CreationTime));
                 for (int i = 0; i < ffs.Count; i++)
                 {
-                    TimeSpan ts = DateTime.Now.Subtract(ffs[i].CreationTime);
+                    TimeSpan ts = DateTime.Now.Date.Subtract(ffs[i].CreationTime.Date);
                     if (ts.Days >= Set.Day)
                     {//超过很久的数据
                         LocalXmlData lxd = Read(ffs[i].FullName, true,true,true);
@@ -148,13 +148,15 @@ public class AppData
                         }
                         else
                         {
+                            lxd.dt = ffs[i].CreationTime;
                             HistoryData.Add(lxd);
                             OldDatas.Add(lxd);
                         }
                     }
-                    else if(ts.Days >1)
+                    else if(ts.Days >0)
                     {
                         LocalXmlData lxd = Read(ffs[i].FullName, true, false,true);
+                        lxd.dt = ffs[i].CreationTime;
                         HistoryData.Add(lxd);
                         if (!lxd.IsOver)
                         {//还有未上传的数据
@@ -164,6 +166,7 @@ public class AppData
                     else
                     {//当天记录
                         CurrentData = Read(ffs[i].FullName, false, false,false);
+                        CurrentData.dt = ffs[i].CreationTime;
                         HistoryData.Add(CurrentData);
                     }
                 }
@@ -203,6 +206,7 @@ public class AppData
         CurrentData.Records_JS = new Dictionary<long, WJ_Record_Local>();
         CurrentData.Records_Submit = new Dictionary<long, WJ_Record_Local>();
         CurrentData.AllRecords = new List<WJ_Record_Local>();
+        CurrentData.dt = DateTime.Now;
         HistoryData.Add(CurrentData);
     }
 
@@ -929,6 +933,7 @@ public class LocalXmlData
     public XmlDocument Xml;
     public XmlNode photo_parent, record_parent;
     public string XmlPath;
+    public DateTime dt;
     public Dictionary<long, WJ_Record_Local> Records;
     public Dictionary<long, WJ_Record_Local> Records_JS;
     /// <summary>

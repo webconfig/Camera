@@ -36,9 +36,8 @@ public class MainClient
         try
         {
             Debug.Log("==连接:" + App.Instance.Data.Set.DataServer + ":" + App.Instance.Data.Set.DataPort);
-            //client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
-            client.BeginConnect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort),
-                               new AsyncCallback(CallBackMethod), null);
+            client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
+            State = ClientStat.Conn;
         }
         catch
         {
@@ -47,29 +46,6 @@ public class MainClient
             return;
         }
         
-    }
-    private void CallBackMethod(IAsyncResult asyncresult)
-    {
-        try
-        {
-            if (client.Client != null)
-            {
-                client.EndConnect(asyncresult);
-                State = ClientStat.Conn;
-            }
-            else
-            {
-                TipsManager.Instance.Error("连接服务器失败，脱机工作！");
-                GotoConnFail();
-                return;
-            }
-        }
-        catch
-        {
-            TipsManager.Instance.Error("连接服务器失败，脱机工作！");
-            GotoConnFail();
-            return;
-        }
     }
     #region 连接登录
     public LoginResponse LoginResult;
@@ -82,37 +58,12 @@ public class MainClient
         {
             client = new TcpClient();
             //Debug.Log("重新连接" + App.Instance.Data.Set.DataServer + ":" + App.Instance.Data.Set.DataPort);
-            //client.BeginConnect()
-            //client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
-            client.BeginConnect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort),
-                               new AsyncCallback(ReConnCallBackMethod), null);
+            client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
+            State = ClientStat.Conn;
         }
         catch
         {
             AddStr("连接服务器失败");
-            return;
-        }
-    }
-    private void ReConnCallBackMethod(IAsyncResult asyncresult)
-    {
-        try
-        {
-            if (client.Client != null)
-            {
-                client.EndConnect(asyncresult);
-                State = ClientStat.Conn;
-            }
-            else
-            {
-                AddStr("连接服务器失败");
-                GotoConnFail();
-                return;
-            }
-        }
-        catch
-        {
-            AddStr("连接服务器失败");
-            GotoConnFail();
             return;
         }
     }

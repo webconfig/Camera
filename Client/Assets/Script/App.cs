@@ -23,7 +23,6 @@ public class App : MonoBehaviour
         Data.Init();
         //Develop();
     }
-    AndroidJavaObject android_help;
     void Start()
     {
         //Application.targetFrameRate = 20;
@@ -35,19 +34,23 @@ public class App : MonoBehaviour
     }
     void LateUpdate()
     {
-        if (NetWork==0)
+        if (NetWork == 1)
         {
-            DataServer.DealSend();
-            DataServer.DelRecvData();
-            Data.DelData();
+            DataServer.DealSend(true);
         }
-        else if (NetWork == 2)
+        else
         {
-            if (Time.time - NetWorkStartTime >= NetWorkCD)
+            DataServer.DealSend(false);
+            if (NetWork == 2)
             {
-                NetWork = 0;
+                if (Time.time - NetWorkStartTime >= NetWorkCD)
+                {
+                    NetWork = 0;
+                }
             }
         }
+        Data.DelData();
+        DataServer.DelRecvData();
     }
     public void DisAbleNewWork()
     {
@@ -62,13 +65,6 @@ public class App : MonoBehaviour
         if(InputEvent!=null)
         {
             InputEvent();
-        }
-    }
-    void OnGUI()
-    {
-        if (GUI.Button(new Rect(50, 50, 50, 50), "Btn"))
-        {
-            gameObject.SetActive(false);
         }
     }
     #region 退出

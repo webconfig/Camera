@@ -12,11 +12,14 @@ public class UI_Set : UI_Base
     public InputField Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_CD, Input_CD1, Input_JSCD,Input_Day;
     public Toggle Tog_JC, Tog_JCJS,Tog_JC_One,Tog_JC_Two;
     private WJ_Set Set;
-
-    public override void UI_Start()
+    public override void UI_Init()
     {
         Btn_Back.onClick.AddListener(Back);
         Btn_OK.onClick.AddListener(Btn_OK_Click);
+    }
+    public override void UI_Start()
+    {
+       
         Set = App.Instance.Data.Set;
         Input_WJ_Code.text = Set.WJ_Code;
         Input_Place.text = Set.Place;
@@ -52,13 +55,6 @@ public class UI_Set : UI_Base
             Tog_JC_Two.isOn = true;
         }
     }
-
-    public override void UI_End()
-    {
-        Btn_Back.onClick.RemoveAllListeners();
-        Btn_OK.onClick.RemoveAllListeners();
-    }
-
 
     private void Btn_OK_Click()
     {

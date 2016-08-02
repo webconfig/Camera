@@ -81,6 +81,10 @@ public class UI_Control_Table : MonoBehaviour, IBeginDragHandler, IDragHandler, 
             RowParents.localPosition = new Vector3(0, RowParents.rect.height - Height, 0);
         }
     }
+    public void ToTop()
+    {
+        RowParents.localPosition = new Vector3(0, 0, 0);
+    }
 
     private float _height = -1;
     public float Height

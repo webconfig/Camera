@@ -5,20 +5,28 @@ public class UI_History : UI_Base
 {
     public Button Btn_Back,Btn_Before,Btn_Next;
     public UI_Control_Table table;
-    public Text TxtTotal;
+    public Text TxtTotal,TxtTitle;
     public int index = 0;
 
-    public override void UI_Start()
+    public override void UI_Init()
     {
         Btn_Back.onClick.AddListener(Btn_Back_Click);
         Btn_Before.onClick.AddListener(Btn_Before_Click);
-        Btn_Before.onClick.AddListener(Btn_Next_Click);
-        ShowData(App.Instance.Data.HistoryData[0]);
+        Btn_Next.onClick.AddListener(Btn_Next_Click);
+    }
+
+    public override void UI_Start()
+    {
+        index = App.Instance.Data.HistoryData.Count-1;
+        if (index < 0) { index = 0; }
+        ShowData(App.Instance.Data.HistoryData[index]);
     }
     private void ShowData(LocalXmlData xd)
     {
+        table.Clear();
+        TxtTitle.text =string.Format("数据[{0}]", xd.dt.ToString("yyyy-MM-dd"));
         WJ_Record model;
-        TxtTotal.text = string.Format("总共{0}条计次,{1}条计时,合计{2}条记录", xd.Records.Count, xd.Records_JS.Count, xd.AllRecords.Count);
+        int jc=0, js=0;
         for (int i = 0; i < xd.AllRecords.Count; i++)
         {
             model = xd.AllRecords[i].Data;
@@ -26,7 +34,16 @@ public class UI_History : UI_Base
             data_row.Add("WJID", model.WJID);
             data_row.Add("BeginTime", model.BeginTime);
             data_row.Add("EndTime", model.EndTime);
-            data_row.Add("Mode", model.Mode == 0 ? "计次" : "计时");
+            if(model.Mode==0)
+            {
+                data_row.Add("Mode","计次");
+                jc++;
+            }
+            else
+            {
+                data_row.Add("Mode","计时");
+                js++;
+            }
             if (!string.IsNullOrEmpty(model.BgeinPhotoID))
             {
                 data_row.Add("PhotoMiniPathBegin", App.Instance.Data.ImgMinPath + xd.Photos[model.BgeinPhotoID].PhotoMiniPath);
@@ -37,11 +54,8 @@ public class UI_History : UI_Base
             }
             table.AddRow(data_row, null);
         }
-    }
-    public override void UI_End()
-    {
-        table.Clear();
-        Btn_Back.onClick.RemoveAllListeners();
+        TxtTotal.text = string.Format("总共{0}条计次,{1}条计时,合计{2}条记录", jc, js, xd.AllRecords.Count);
+        table.ToTop();
     }
     private void Btn_Back_Click()
     {
@@ -49,18 +63,26 @@ public class UI_History : UI_Base
     }
     private void Btn_Before_Click()
     {
-        if (index < App.Instance.Data.HistoryData.Count-1)
+        if (index > 0)
         {
-            index++;
+            index--;
             ShowData(App.Instance.Data.HistoryData[index]);
+        }
+        else
+        {
+            TipsManager.Instance.Error("已经是最后一条数据");
         }
     }
     private void Btn_Next_Click()
     {
-        if (index >0)
+        if (index < App.Instance.Data.HistoryData.Count - 1)
         {
-            index--;
+            index++;
             ShowData(App.Instance.Data.HistoryData[index]);
+        }
+        else
+        {
+            TipsManager.Instance.Error("已经是最新数据");
         }
     }
 }
