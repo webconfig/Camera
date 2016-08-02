@@ -30,6 +30,7 @@ public class UI_Camera : UI_Base
         Data_GoodsChangeEvent();
         width = Screen.width;
         height = Screen.height;
+        transform.localRotation
     }
     public override void UI_Start()
     {
