@@ -401,6 +401,7 @@ public class AppData
         {
             CurrentData.DealPhoto(wj_photo, false, out find) ;
         }
+        OnValueChange();
     }
     #endregion
 
@@ -914,7 +915,7 @@ public class AppData
     #endregion
 
     public event CallBack GoodsChangeEvent;
-    public event CallBack<int> ValueChange;
+    public event CallBack ValueChange;
     public void ClearValueChange()
     {
         ValueChange = null;
@@ -923,7 +924,7 @@ public class AppData
     {
         if (ValueChange != null)
         {
-            ValueChange(Set.Total - LocalCount);
+            ValueChange();
         }
     }
 }

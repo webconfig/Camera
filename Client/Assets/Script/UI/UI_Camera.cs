@@ -26,7 +26,7 @@ public class UI_Camera : UI_Base
         Btn_Look.onClick.AddListener(Btn_Look_Click);
         Btn_Close.onClick.AddListener(Btn_Close_Click);
         Btn_Set.onClick.AddListener(Btn_Set_Click);
-        Txt_Send.text = string.Format("已上传<color=#00ff00ff>{1}</color>车，总共<color=#00ff00ff>{0}</color>车", App.Instance.Data.Set.Total, App.Instance.Data.Set.Total - App.Instance.Data.LocalCount);
+        //Txt_Send.text = string.Format("已上传<color=#00ff00ff>{1}</color>车，总共<color=#00ff00ff>{0}</color>车", App.Instance.Data.Set.Total, App.Instance.Data.Set.Total - App.Instance.Data.LocalCount);
         Data_GoodsChangeEvent();
         width = Screen.width;
         height = Screen.height;
@@ -108,6 +108,7 @@ public class UI_Camera : UI_Base
             Btn_JS.gameObject.SetActive(true);
             Txt_JS_Time.gameObject.SetActive(true);
         }
+        Data_ValueChange();
     }
     public override void UI_End()
     {
@@ -451,7 +452,7 @@ public class UI_Camera : UI_Base
         DL_Goods.value = goods_value;
         DL_Goods.captionText.text = DL_Goods.options[goods_value].text;
     }
-    void Data_ValueChange(int t)
+    void Data_ValueChange()
     {
         Txt_Send.text = string.Format("已上传<color=#00ff00ff>{1}</color>车，总共<color=#00ff00ff>{0}</color>车", App.Instance.Data.Set.Total, App.Instance.Data.Set.Total - App.Instance.Data.LocalCount);
         int record_count = 0; int photo_count = 0;
@@ -462,7 +463,7 @@ public class UI_Camera : UI_Base
         }
         record_count += App.Instance.Data.CurrentData.Records_Submit.Count;
         photo_count += App.Instance.Data.CurrentData.PhotosSubmit.Count;
-        Txt_NotSend.text = string.Format("剩余{0}条记录,{1}张照片", record_count, photo_count);
+        Txt_NotSend.text = string.Format("剩余<color=#00ff00ff>{0}</color>条记录,<color=#00ff00ff>{1}</color>张照片", record_count, photo_count);
     }
     private void GoodsSelect(int value)
     {
