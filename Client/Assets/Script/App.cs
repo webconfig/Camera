@@ -25,7 +25,7 @@ public class App : MonoBehaviour
     }
     void Start()
     {
-        //Application.targetFrameRate = 20;
+        Application.targetFrameRate = 30;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         DataServer = new MainClient();
         UI_Manager.Instance.Init();

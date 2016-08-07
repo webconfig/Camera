@@ -29,7 +29,6 @@ public class AppData
 
         Data_Set_Xml = new XmlDocument();
         Set = new WJ_Set();
-
         SetFilePath = string.Format("{0}/{1}", Application.persistentDataPath, SetFileName);
         if (!File.Exists(SetFilePath))
         {

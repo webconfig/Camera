@@ -11,7 +11,7 @@ public class UI_Camera : UI_Base
     private bool isPlay = true;
     private float PlayStartTime=-10000;
     public Button Btn_Capture, Btn_Look, Btn_Close, Btn_Set,Btn_JS;
-    public Text Txt_WJ_Code, Txt_Goods, Txt_Send,Txt_NotSend, Txt_Time,Txt_Total,Txt_JS_Time,Txt_Js_Btn,Txt_NetWork,Txt_RunStrs,Txt_NowTime;
+    public Text Txt_WJ_Code, Txt_Goods, Txt_Send, Txt_Time,Txt_Total,Txt_JS_Time,Txt_Js_Btn,Txt_NetWork,Txt_RunStrs,Txt_NowTime;
     public Dropdown DL_Goods;
     public RawImage Img_Camera;
     private Texture2D snap;
@@ -463,7 +463,7 @@ public class UI_Camera : UI_Base
         }
         record_count += App.Instance.Data.CurrentData.Records_Submit.Count;
         photo_count += App.Instance.Data.CurrentData.PhotosSubmit.Count;
-        Txt_NotSend.text = string.Format("剩余<color=#00ff00ff>{0}</color>条记录,<color=#00ff00ff>{1}</color>张照片", record_count, photo_count);
+        //Txt_NotSend.text = string.Format("剩余<color=#00ff00ff>{0}</color>条记录,<color=#00ff00ff>{1}</color>张照片", record_count, photo_count);
     }
     private void GoodsSelect(int value)
     {

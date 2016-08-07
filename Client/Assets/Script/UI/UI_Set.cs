@@ -8,25 +8,39 @@ using System.Text.RegularExpressions;
 /// </summary>
 public class UI_Set : UI_Base
 {
-    public Button Btn_OK, Btn_Back;
-    public InputField Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_CD, Input_CD1, Input_JSCD,Input_Day;
+    public Button Btn_OK, Btn_Back,Btn_Login;
+    public InputField Input_Login_Pwd, Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_CD, Input_CD1, Input_JSCD,Input_Day;
     public Toggle Tog_JC, Tog_JCJS,Tog_JC_One,Tog_JC_Two;
     private WJ_Set Set;
+    public GameObject Content_Login, Content_Set;
     public override void UI_Init()
     {
         Btn_Back.onClick.AddListener(Back);
         Btn_OK.onClick.AddListener(Btn_OK_Click);
+        Btn_Login.onClick.AddListener(Btn_Set_Login);
     }
     public override void UI_Start()
     {
-       
         Set = App.Instance.Data.Set;
+        Input_Login_Pwd.text = "";
+        if (Set.CustomerID ==-1&& string.IsNullOrEmpty(Set.Password))
+        {
+            Content_Login.gameObject.SetActive(false);
+            Content_Set.gameObject.SetActive(true);
+        }
+        else
+        {
+            Content_Login.gameObject.SetActive(true);
+            Content_Set.gameObject.SetActive(false);
+        }
         Input_WJ_Code.text = Set.WJ_Code;
         Input_Place.text = Set.Place;
         Input_Data_Server.text = Set.DataServer;
         Input_Data_Port.text = Set.DataPort.ToString();
-
-        Input_CustomerID.text = Set.CustomerID.ToString();
+        if (Set.CustomerID != -1)
+        {
+            Input_CustomerID.text = Set.CustomerID.ToString();
+        }
         Input_Password.text = Set.Password;
         Input_CD.text = Set.CD.ToString();
         Input_JSCD.text = (Set.JSCD / 60.0f).ToString();
@@ -55,7 +69,18 @@ public class UI_Set : UI_Base
             Tog_JC_Two.isOn = true;
         }
     }
-
+    private void Btn_Set_Login()
+    {
+        if (string.Equals(Input_Login_Pwd.text, App.Instance.Data.Set.Password))
+        {
+            Content_Login.gameObject.SetActive(false);
+            Content_Set.gameObject.SetActive(true);
+        }
+        else
+        {
+            TipsManager.Instance.Error("密码错误");
+        }
+    }
     private void Btn_OK_Click()
     {
         bool relogin = false;

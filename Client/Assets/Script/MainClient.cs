@@ -5,7 +5,9 @@ using ProtoBuf;
 using System;
 using google.protobuf;
 using System.Collections.Generic;
-using System.Linq; 
+using System.Linq;
+using System.Collections;
+
 public class MainClient
 {
     public static TcpClient client;
@@ -52,7 +54,7 @@ public class MainClient
     /// <summary>
     /// 重连
     /// </summary>
-    private void ConnServer()
+    IEnumerator  ConnServer()
     {
         try
         {
@@ -64,8 +66,8 @@ public class MainClient
         catch
         {
             AddStr("连接服务器失败");
-            return;
         }
+        yield return null;
     }
     /// <summary>
     /// 登陆
@@ -352,7 +354,7 @@ public class MainClient
             {
                 ConnStartTime = Time.time;
                 AddStr("重连服务器");
-                ConnServer();
+                App.Instance.StartCoroutine(ConnServer());
             }
             #endregion
         }
