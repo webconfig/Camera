@@ -25,7 +25,7 @@ internal class NetworkFactory
         {
             NetworkListener = new TcpListener(new System.Net.IPEndPoint(0, 3333));
             NetworkListener.Start();
-            Debug.Info(string.Format("Server listening clients at {0}:{1}...", ((IPEndPoint)NetworkListener.LocalEndpoint).Address, 3333));
+            Debug.Info(string.Format("开始监听{0}", 3333));
             NetworkListener.BeginAcceptTcpClient(new AsyncCallback(BeginAcceptTcpClient), (object)null);
         }
         catch (Exception ex)

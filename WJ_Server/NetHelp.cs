@@ -74,6 +74,15 @@ public  class NetHelp
         }
         return num;
     }
+    public static int BytesToInt(List<byte> data, int offset,ref int num)
+    {
+        for (int i = offset; i < offset + 4; i++)
+        {
+            num <<= 8;
+            num |= (data[i] & 0xff);
+        }
+        return num;
+    }
     public static int BytesToInt(List<byte> data, int offset)
     {
         int num = 0;

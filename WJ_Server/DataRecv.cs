@@ -34,7 +34,7 @@ public class DataRecv
                     }
                     client.CustomerID = request_login.CustomerID;
                     client.pwd = request_login.Password;
-                    ClientManager.GetInstance().EndClient(request_login.CustomerID, request_login.Password,client.Ticks);
+                    //ClientManager.GetInstance().EndClient(request_login.CustomerID, request_login.Password,client.Ticks);
                     Debug.Info("登录成功");
                 }
                 else
