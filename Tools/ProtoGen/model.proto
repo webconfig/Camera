@@ -21,18 +21,19 @@ message GoodsResponse {
   repeated WJ_Goods result = 1;
 }
 message WJ_Record {
-    required int64 CustomerID=1;
-    required string WJID=2;
-    required int64 ID=3;
-    required string WorkSpace=4;
-    required string GoodsName=5;
-    required string BeginTime=6;
-    required string EndTime=7;
-    required string BgeinPhotoID=8;
-    required string EndPhotoID=9;
-    required float longitude=10;
-    required float Latitude=11;
-    required int32 Mode=12;
+    required int64 SeqID=1;
+    required int64 CustomerID=2;
+    required string WJID=3;
+    required int64 ID=4;
+    required string WorkSpace=5;
+    required string GoodsName=6;
+    required string BeginTime=7;
+    required string EndTime=8;
+    required string BgeinPhotoID=9;
+    required string EndPhotoID=10;
+    required float longitude=11;
+    required float Latitude=12;
+    required int32 Mode=13;
 }
 message RecordResponse {
   required int64 record_id = 1;
