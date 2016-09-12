@@ -24,7 +24,7 @@ public class UI_History : UI_Base
     private void ShowData(LocalXmlData xd)
     {
         table.Clear();
-        TxtTitle.text =string.Format("数据[{0}]", xd.dt.ToString("yyyy-MM-dd"));
+        TxtTitle.text =string.Format("数据[{0}]", xd.dt);
         WJ_Record model;
         int jc=0, js=0;
         for (int i = 0; i < xd.AllRecords.Count; i++)

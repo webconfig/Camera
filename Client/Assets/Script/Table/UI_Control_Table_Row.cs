@@ -7,14 +7,17 @@ using UnityEngine.UI;
 
 public class UI_Control_Table_Row : MonoBehaviour
 {
+    [HideInInspector]
     public int index;
+    public Button Btn_Del;
+    [HideInInspector]
     public UI_Control_Table Table;
  
     public List<UI_Control_Table_Item> Items;
     public Dictionary<string, string> datas;
 
     public UnityEngine.UI.Image bg;
-
+    [HideInInspector]
     public Color color;
 
     public void SetColor(Color _color)
@@ -40,6 +43,11 @@ public class UI_Control_Table_Row : MonoBehaviour
                 Items[i].SetValue(datas[key]);
             }
             Items[i].Init(this);
+        }
+        if(Btn_Del!=null)
+        {
+            Btn_Del.onClick.RemoveAllListeners();
+            Btn_Del.onClick.AddListener(Btn_Delete_Click);
         }
     }
 

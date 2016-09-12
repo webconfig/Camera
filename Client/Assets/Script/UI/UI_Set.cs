@@ -8,9 +8,9 @@ using System.Text.RegularExpressions;
 /// </summary>
 public class UI_Set : UI_Base
 {
-    public Button Btn_OK, Btn_Back,Btn_Login;
-    public InputField Input_Login_Pwd, Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_CD, Input_CD1, Input_JSCD,Input_Day;
-    public Toggle Tog_JC, Tog_JCJS,Tog_JC_One,Tog_JC_Two;
+    public Button Btn_OK, Btn_Back, Btn_Login,Btn_Goods_Add;
+    public InputField Input_Login_Pwd, Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_Password_Local, Input_CD, Input_CD1, Input_JSCD, Input_Day;
+    public Toggle Tog_JC, Tog_JCJS, Tog_JC_One, Tog_JC_Two;
     private WJ_Set Set;
     public GameObject Content_Login, Content_Set;
     public override void UI_Init()
@@ -18,20 +18,26 @@ public class UI_Set : UI_Base
         Btn_Back.onClick.AddListener(Back);
         Btn_OK.onClick.AddListener(Btn_OK_Click);
         Btn_Login.onClick.AddListener(Btn_Set_Login);
+        Btn_Goods_Add.onClick.AddListener(AddGoods);
+        table_goods.RowDeleteEvent += Table_goods_RowDeleteEvent;
+        InitTab();
     }
+
     public override void UI_Start()
     {
         Set = App.Instance.Data.Set;
         Input_Login_Pwd.text = "";
-        if (Set.CustomerID ==-1&& string.IsNullOrEmpty(Set.Password))
+        if (string.IsNullOrEmpty(Set.Password_Local))
         {
             Content_Login.gameObject.SetActive(false);
             Content_Set.gameObject.SetActive(true);
+            Btn_OK.gameObject.SetActive(true);
         }
         else
         {
             Content_Login.gameObject.SetActive(true);
             Content_Set.gameObject.SetActive(false);
+            Btn_OK.gameObject.SetActive(false);
         }
         Input_WJ_Code.text = Set.WJ_Code;
         Input_Place.text = Set.Place;
@@ -46,6 +52,7 @@ public class UI_Set : UI_Base
         Input_JSCD.text = (Set.JSCD / 60.0f).ToString();
         Input_Day.text = Set.Day.ToString();
         Input_CD1.text = Set.CD1.ToString();
+        Input_Password_Local.text = Set.Password_Local;
         //Tog_Develop.isOn = Set.Develop;
         if (App.Instance.Data.Set.RunType == 0)
         {
@@ -68,10 +75,11 @@ public class UI_Set : UI_Base
             Tog_JC_One.isOn = false;
             Tog_JC_Two.isOn = true;
         }
+        ShowGoods();
     }
     private void Btn_Set_Login()
     {
-        if (string.Equals(Input_Login_Pwd.text, App.Instance.Data.Set.Password))
+        if (string.Equals(Input_Login_Pwd.text, App.Instance.Data.Set.Password_Local))
         {
             Content_Login.gameObject.SetActive(false);
             Content_Set.gameObject.SetActive(true);
@@ -84,10 +92,10 @@ public class UI_Set : UI_Base
     private void Btn_OK_Click()
     {
         bool relogin = false;
-        string WJ_Code,Place, DataServer,DataPort, CustomerIDStr, Password,CDStr, CD1Str, CDJSStr,DayStr;
+        string WJ_Code, Place, DataServer, DataPort, CustomerIDStr, Password, CDStr, CD1Str, CDJSStr, DayStr, Password_Local;
         int data_port, Day;
         long CustomerID;
-        float CD,CD1,CDJS;
+        float CD, CD1, CDJS;
 
         CDStr = Input_CD.text.Trim();
         if (string.IsNullOrEmpty(CDStr))
@@ -139,6 +147,12 @@ public class UI_Set : UI_Base
         if (string.IsNullOrEmpty(Password))
         {
             TipsManager.Instance.Error("密码为空！");
+            return;
+        }
+        Password_Local = Input_Password_Local.text.Trim();
+        if (string.IsNullOrEmpty(Password_Local))
+        {
+            TipsManager.Instance.Error("本地密码为空！");
             return;
         }
         #endregion
@@ -198,7 +212,7 @@ public class UI_Set : UI_Base
         #endregion
 
         Set.CD = CD;
-        Set.JSCD = CDJS*60;
+        Set.JSCD = CDJS * 60;
         Set.WJ_Code = WJ_Code;
         Set.Place = Place;
 
@@ -215,11 +229,12 @@ public class UI_Set : UI_Base
         Set.RunType = Tog_JC.isOn ? 0 : 1;
         Set.JCType = Tog_JC_One.isOn ? 1 : 2;
         Set.CD1 = CD1;
+        Set.Password_Local = Password_Local;
         App.Instance.Data.SaveSet();
         //App.Instance.Develop();
         TipsManager.Instance.Info("设置成功！");
         UI_Manager.Instance.Back();
-        if(relogin)
+        if (relogin)
         {
             App.Instance.DataServer.ReLogin();//重新登录
         }
@@ -231,5 +246,85 @@ public class UI_Set : UI_Base
     public bool IPCheck(string ip)
     {
         return Regex.IsMatch(ip, @"^((2[0-4]\d|25[0-5]|[01]?\d\d?)\.){3}(2[0-4]\d|25[0-5]|[01]?\d\d?)$");
+    }
+
+    //==============
+    public UI_Control_Table table_goods;
+    public Toggle Tog_UserInfo, Top_Work, Tog_Server, Top_Goods;
+    public GameObject Content_UserInfo, Content_Work, Content_Server, Content_Goods, Content_Current;
+    public void InitTab()
+    {
+        Tog_UserInfo.onValueChanged.AddListener(ShowUserInfo);
+        Top_Work.onValueChanged.AddListener(ShowWork);
+        Tog_Server.onValueChanged.AddListener(ShowServer);
+        Top_Goods.onValueChanged.AddListener(ShowGoods);
+    }
+    public void ShowUserInfo(bool _select)
+    {
+        if(Content_Current!=null)
+        {
+            Content_Current.SetActive(false);
+        }
+        Content_UserInfo.SetActive(true);
+        Content_Current = Content_UserInfo;
+    }
+    public void ShowWork(bool _select)
+    {
+        if (Content_Current != null)
+        {
+            Content_Current.SetActive(false);
+        }
+        Content_Work.SetActive(true);
+        Content_Current = Content_Work;
+    }
+    public void ShowServer(bool _select)
+    {
+        if (Content_Current != null)
+        {
+            Content_Current.SetActive(false);
+        }
+        Content_Server.SetActive(true);
+        Content_Current = Content_Server;
+    }
+    public void ShowGoods(bool _select)
+    {
+        if (Content_Current != null)
+        {
+            Content_Current.SetActive(false);
+        }
+        Content_Goods.SetActive(true);
+        Content_Current = Content_Goods;
+    }
+    //=====
+    public InputField input_goods;
+    private void ShowGoods()
+    {
+        table_goods.Clear();
+        for (int i = 0; i < App.Instance.Data.Goods.Count; i++)
+        {
+            Dictionary<string, string> data_row = new Dictionary<string, string>();
+            data_row.Add("id", App.Instance.Data.Goods[i].GoodsID);
+            data_row.Add("name", App.Instance.Data.Goods[i].GoodsName);
+            table_goods.AddRow(data_row, null);
+        }
+    }
+    private void AddGoods()
+    {
+        string str = input_goods.text;
+        if (string.IsNullOrEmpty(str))
+        {
+            TipsManager.Instance.Error("物料类型为空！");
+            return;
+        }
+        App.Instance.Data.AddGoods(str, str);
+        Dictionary<string, string> data_row = new Dictionary<string, string>();
+        data_row.Add("id", str);
+        data_row.Add("name", str);
+        table_goods.AddRow(data_row, null);
+    }
+    private void Table_goods_RowDeleteEvent(UI_Control_Table_Row row)
+    {
+        App.Instance.Data.RemoveGoods(row.datas["id"]);
+        table_goods.RemoveRow(row);
     }
 }

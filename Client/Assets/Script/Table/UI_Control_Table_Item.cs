@@ -8,11 +8,13 @@ using UnityEngine.UI;
 
 public class UI_Control_Table_Item : MonoBehaviour
 {
+    [HideInInspector]
     public UI_Control_Table_Row row;
     public TableItemType ItemType;
+    [HideInInspector]
     public string value;
+    [HideInInspector]
     public string str;
-    public UnityEngine.UI.Button.ButtonClickedEvent BtnClickEvent;
      
     public string Temp;
     public string key;

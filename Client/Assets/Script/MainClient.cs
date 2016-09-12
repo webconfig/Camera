@@ -21,7 +21,7 @@ public class MainClient
     public float LoginStartTime = 0, LoginTimeOut = 10;
     public float SendTime=0, SendCD = 2;
     public bool RttChange = false;
-    private bool GetGoods = false;
+    private bool GetGoods = true;
     public bool ShowLoginOkTip = true;
     public NetworkStream NetStream;
     public void Init()
@@ -65,7 +65,7 @@ public class MainClient
         }
         catch
         {
-            AddStr("连接服务器失败");
+            Debug.Log("连接服务器失败");
         }
         yield return null;
     }
@@ -103,17 +103,7 @@ public class MainClient
     /// </summary>
     public void GotoConnFail()
     {
-        State = ClientStat.ConnFail;
-        if (NetStream != null)
-        {
-            NetStream.Close();
-            NetStream = null;
-        }
-        if (client != null)
-        {
-            client.Close();
-            client = null;
-        }
+        State = ClientStat.ConnFailStart;
     }
     #endregion
     /// <summary>
@@ -134,48 +124,43 @@ public class MainClient
     private static int BLOCK_SIZE = 1024 * 2;
     Byte[] buffer = new Byte[BLOCK_SIZE];
     int iBytes = 0;
-    public void GotoSendFile()
-    {
-        State = ClientStat.SendFile;
-        SendFileState = 0;
-    }
-    /// <summary>
-    /// 查找一个上传的图片
-    /// </summary>
-    public bool SelectFile()
-    {
-        CurrentFile = null;
-        if (App.Instance.Data.OldDatas.Count > 0)
-        {
-            for (int i = 0; i < App.Instance.Data.OldDatas.Count; i++)
-            {
-                if (App.Instance.Data.OldDatas[i].PhotosSubmit.Count > 0)
-                {//删除没有记录的文件
-                    CurrentFile = App.Instance.Data.OldDatas[i].PhotosSubmit.Values.First();
-                }
-            }
-        }
-        else
-        {
-            if (App.Instance.Data.CurrentData.PhotosSubmit.Count > 0)
-            {
-                CurrentFile = App.Instance.Data.CurrentData.PhotosSubmit.Values.First();
-            }
-        }
+    ///// <summary>
+    ///// 查找一个上传的图片
+    ///// </summary>
+    //public bool SelectFile()
+    //{
+    //    CurrentFile = null;
+    //    if (App.Instance.Data.OldDatas.Count > 0)
+    //    {
+    //        for (int i = 0; i < App.Instance.Data.OldDatas.Count; i++)
+    //        {
+    //            if (App.Instance.Data.OldDatas[i].PhotosSubmit.Count > 0)
+    //            {//删除没有记录的文件
+    //                CurrentFile = App.Instance.Data.OldDatas[i].PhotosSubmit.Values.First();
+    //            }
+    //        }
+    //    }
+    //    else
+    //    {
+    //        if (App.Instance.Data.CurrentData.PhotosSubmit.Count > 0)
+    //        {
+    //            CurrentFile = App.Instance.Data.CurrentData.PhotosSubmit.Values.First();
+    //        }
+    //    }
 
-        if (CurrentFile != null)
-        {
-            FileStartRequest request = new FileStartRequest();
-            request.name = CurrentFile.Data.PhotoPath;
-            request.CustomerID = CurrentFile.Data.CustomerID;
-            request.WJID = CurrentFile.Data.WJID;
-            request.AtTime =Convert.ToDateTime(CurrentFile.Data.AtTime).ToString("yyyy-MM-dd");
-            Send<FileStartRequest>(11, request);
-            AddStr("开始发送文件：" + CurrentFile.Data.PhotoPath);
-            return true;
-        }
-        return false;
-    }
+    //    if (CurrentFile != null)
+    //    {
+    //        FileStartRequest request = new FileStartRequest();
+    //        request.name = CurrentFile.Data.PhotoPath;
+    //        request.CustomerID = CurrentFile.Data.CustomerID;
+    //        request.WJID = CurrentFile.Data.WJID;
+    //        request.AtTime =Convert.ToDateTime(CurrentFile.Data.AtTime).ToString("yyyy-MM-dd");
+    //        Send<FileStartRequest>(11, request);
+    //        Debug.Log("开始发送文件：" + CurrentFile.Data.PhotoPath);
+    //        return true;
+    //    }
+    //    return false;
+    //}
     public void CloseFile()
     {
         if (fs != null)
@@ -295,7 +280,7 @@ public class MainClient
                             RecvData<RecordResponse>(msgBytes, out RecordResponseModel);
                             if (RecordResponseModel.record_id == -1)
                             {
-                                AddStr("传输一个Record发生错误");
+                                Debug.Log("传输一个Record发生错误");
                             }
                             else
                             {
@@ -318,19 +303,19 @@ public class MainClient
                 #endregion
             }
         }
-        if (StrChange)
-        {
-            StrChange = false;
-            if (RunStrsChangeEvent != null)
-            {
-                string result = "";
-                for (int i = 0; i < RunStrs.Count; i++)
-                {
-                    result = string.Concat(result, RunStrs[i]) + "\n";
-                }
-                RunStrsChangeEvent(result.ToString());
-            }
-        }
+        //if (StrChange)
+        //{
+        //    StrChange = false;
+        //    if (RunStrsChangeEvent != null)
+        //    {
+        //        string result = "";
+        //        for (int i = 0; i < RunStrs.Count; i++)
+        //        {
+        //            result = string.Concat(result, RunStrs[i]) + "\n";
+        //        }
+        //        RunStrsChangeEvent(result.ToString());
+        //    }
+        //}
     }
     public void GotoSend()
     {
@@ -341,19 +326,49 @@ public class MainClient
 
     public void DealSend(bool NotSend)
     {
-       
-        if (State == ClientStat.ConnFail)
+        if(State== ClientStat.NoNetWorkStart)
+        {
+            if (RttChangeEvent != null)
+            {
+                RttChangeEvent("网络：<color=#FF0000FF>没有网络</color>");
+            }
+            State = ClientStat.NoNetWork;
+        }
+        else if(State== ClientStat.NoNetWork)
+        {
+            if (Application.internetReachability != NetworkReachability.NotReachable)
+            {
+                State = ClientStat.ConnFailStart;
+                return;
+            }
+        }
+        else if (State== ClientStat.ConnFailStart)
+        {
+            if (NetStream != null)
+            {
+                NetStream.Close();
+                NetStream = null;
+            }
+            if (client != null)
+            {
+                client.Close();
+                client = null;
+            }
+            ConnStartTime = Time.time;
+            State = ClientStat.ConnFail;
+        }
+        else if (State == ClientStat.ConnFail)
         {//连接失败
             if (NotSend) { return; }
             #region ConnFail
             if (Application.internetReachability == NetworkReachability.NotReachable)
             {
+                State = ClientStat.NoNetWorkStart;
                 return;
             }
             if (Time.time - ConnStartTime >= ConnCD)
             {
-                ConnStartTime = Time.time;
-                AddStr("重连服务器");
+                Debug.Log("重连服务器");
                 App.Instance.StartCoroutine(ConnServer());
             }
             #endregion
@@ -375,7 +390,7 @@ public class MainClient
                 NetStream = client.GetStream();
                 State = ClientStat.Conn;
                 BeginRead();
-                AddStr("连接到服务器");
+                Debug.Log("连接到服务器");
                 RequestLogin();//请求登录
                 #endregion
             }
@@ -430,7 +445,7 @@ public class MainClient
                 #region 重新登录
                 if (Time.time - ReLoginStartTime >= ReLoginCD)
                 {
-                    AddStr("重新登录");
+                    Debug.Log("重新登录");
                     CloseFile();
                     RequestLogin();
                 }
@@ -449,52 +464,65 @@ public class MainClient
             else if (State == ClientStat.SendData)
             {//发送记录
                 if (NotSend) { return; }
-                #region SendData
                 if (App.Instance.Data.OldDatas.Count > 0)
                 {
+                    #region 发送历史数据
                     if (App.Instance.Data.OldDatas[0].Records_Submit.Count > 0)
                     {
-                        AddStr("发送历史数据记录1条");
+                        Debug.Log("发送历史数据记录1条");
                         State = ClientStat.Sending;
                         SendStartTime = Time.time;
                         Send<WJ_Record>(4, App.Instance.Data.OldDatas[0].Records_Submit.Values.First().Data);
                     }
+                    else
+                    {
+                        if(App.Instance.Data.OldDatas[0].PhotosSubmit.Count==0)
+                        {//上传完毕
+                            App.Instance.Data.OldDatas[0].Over();
+                            App.Instance.Data.OldDatas.RemoveAt(0);
+                        }
+                        else
+                        {//发送那天的图片
+                            CurrentFile = App.Instance.Data.OldDatas[0].PhotosSubmit.Values.First();
+                            StartSendFile();
+                        }
+                    }
+                    #endregion
                 }
-                else if (App.Instance.Data.CurrentData.Records_Submit.Count > 0)
+                else 
                 {
-                    AddStr("发送当天数据记录1条");
-                    State = ClientStat.Sending;
-                    SendStartTime = Time.time;
-                    Send<WJ_Record>(4, App.Instance.Data.CurrentData.Records_Submit.Values.First().Data);
+                    #region 发送当天数据
+                    if (App.Instance.Data.CurrentData.Records_Submit.Count > 0)
+                    {
+                        Debug.Log("发送当天数据记录1条");
+                        State = ClientStat.Sending;
+                        SendStartTime = Time.time;
+                        Send<WJ_Record>(4, App.Instance.Data.CurrentData.Records_Submit.Values.First().Data);
+                    }
+                    else
+                    {//开始发送当天图片
+                        if (App.Instance.Data.CurrentData.PhotosSubmit.Count > 0)
+                        {
+                            CurrentFile = App.Instance.Data.CurrentData.PhotosSubmit.Values.First();
+                            StartSendFile();
+                        }
+                        else
+                        {
+                            GotoSend();
+                        }
+                    }
+                    #endregion
                 }
-                else
-                {//没有要发送的数据后，开始发送图片
-                    GotoSendFile();
-                }
-                #endregion
             }
             else if (State == ClientStat.SendFile)
             {//发送文件
                 #region SendFile
                 switch (SendFileState)
                 {
-                    case 0:
-                        if (SelectFile())
-                        {
-                            SendFileStartTime = Time.time;
-                            SendFileState = 1;
-                        }
-                        else
-                        {
-
-                            GotoSend();//没有发送的文件，跳转到发送数据
-                        }
-
-                        break;
                     case 1:
                         if (Time.time - SendFileStartTime >= SendFileTimeOut)
                         {//超时
-                            AddStr("开始发送文件超时");
+                            Debug.Log("开始发送文件超时");
                             CloseFile();
                             GotoConnFail();
                         }
@@ -526,7 +554,7 @@ public class MainClient
                         break;
                     case 4:
                         SendFileState = 0;
-                        AddStr("完成文件：" + CurrentFile.Data.PhotoPath);
+                        Debug.Log("完成文件：" + CurrentFile.Data.PhotoPath);
                         CloseFile();//关闭文件
                         App.Instance.Data.PhotoSubmitOver(CurrentFile);//更新xml信息
                         GotoSend();//发送完成，去发送数据
@@ -539,12 +567,27 @@ public class MainClient
                 #region 发送超时
                 if (Time.time - SendStartTime >= SendTimeOut)
                 {//超时
-                    AddStr("发送数据超时");
+                    Debug.Log("发送数据超时");
                     GotoConnFail();
                 }
                 #endregion
             }
         }
+    }
+
+
+    private void StartSendFile()
+    {
+        State = ClientStat.SendFile;
+        SendFileState = 1;
+        SendFileStartTime = Time.time;
+        FileStartRequest request = new FileStartRequest();
+        request.name = CurrentFile.Data.PhotoPath;
+        request.CustomerID = CurrentFile.Data.CustomerID;
+        request.WJID = CurrentFile.Data.WJID;
+        request.AtTime = Convert.ToDateTime(CurrentFile.Data.AtTime).ToString("yyyy-MM-dd");
+        Send<FileStartRequest>(11, request);
+        Debug.Log("开始发送文件：" + CurrentFile.Data.PhotoPath);
     }
 
     #region 退出
@@ -583,7 +626,7 @@ public class MainClient
         }
         catch
         {
-            AddStr("发送文件发生网络异常");
+            Debug.Log("发送文件发生网络异常");
             CloseFile();
             GotoConnFail();
         }
@@ -602,7 +645,7 @@ public class MainClient
         }
         catch
         {
-            AddStr("发送心跳包发生网络异常");
+            Debug.Log("发送心跳包发生网络异常");
             CloseFile();
             GotoConnFail();
         }
@@ -647,22 +690,6 @@ public class MainClient
     }
     #endregion
 
-    #region 信息
-    public List<string> RunStrs=new List<string>();
-    public int RunStrsMax = 10;
-    public event CallBack<string> RunStrsChangeEvent;
-    private bool StrChange = false;
-    public void AddStr(string str)
-    {
-        if(RunStrs.Count>=RunStrsMax)
-        {
-            RunStrs.RemoveAt(0);
-        }
-        RunStrs.Add(str);
-        StrChange = true;
-    }
-    #endregion
-
     public event CallBack<string> RttChangeEvent;
     private List<byte> AddDatas=new List<byte>();
     private List<byte> AllDatas = new List<byte>();
@@ -670,6 +697,9 @@ public class MainClient
 }
 public enum ClientStat
 {
+    NoNetWorkStart,
+    NoNetWork,
+    ConnFailStart,
     ConnFail,
     Conn,
     ReLogin,
@@ -679,7 +709,6 @@ public enum ClientStat
     LoingOk,
     SendDataStart,
     SendData,
-    SendFileStart,
     SendFile,
     Sending,
 }

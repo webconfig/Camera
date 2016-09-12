@@ -6,12 +6,13 @@ using UnityEngine.UI;
 public class UI_Camera : UI_Base
 {
     public GameObject Content;
+    public EasyAR.CameraDeviceBehaviour CameraDevice;
     //WebCamTexture cameraTexture;
     //string cameraName = "";
     private bool isPlay = true;
     private float PlayStartTime=-10000;
     public Button Btn_Capture, Btn_Look, Btn_Close, Btn_Set,Btn_JS;
-    public Text Txt_WJ_Code, Txt_Goods, Txt_Send, Txt_Time,Txt_Total,Txt_JS_Time,Txt_Js_Btn,Txt_NetWork,Txt_RunStrs,Txt_NowTime;
+    public Text Txt_WJ_Code, Txt_Goods, Txt_Send_Js, Txt_Send_Jc, Txt_Time,Txt_Total,Txt_JS_Time,Txt_Js_Btn,Txt_NetWork,Txt_RunStrs,Txt_NowTime;
     public Dropdown DL_Goods;
     public RawImage Img_Camera;
     private Texture2D snap;
@@ -30,6 +31,7 @@ public class UI_Camera : UI_Base
         Data_GoodsChangeEvent();
         width = Screen.width;
         height = Screen.height;
+        CameraDevice.CameraSize = new Vector2(width, height);
     }
     public override void UI_Start()
     {
@@ -37,8 +39,9 @@ public class UI_Camera : UI_Base
         Txt_WJ_Code.text = string.Format("挖机号：<color=#00ff00ff>{0}</color>", App.Instance.Data.Set.WJ_Code);
         App.Instance.InputEvent += Btn_Capture_Click;
         App.Instance.Data.ValueChange += Data_ValueChange;
-        App.Instance.Data.GoodsChangeEvent += Data_GoodsChangeEvent;
-        App.Instance.DataServer.RunStrsChangeEvent += DataServer_RunStrsChangeEvent;
+        //App.Instance.Data.GoodsChangeEvent += Data_GoodsChangeEvent;
+        App.Instance.DataServer.RttChangeEvent += DataServer_RttChangeEvent;
+        //App.Instance.DataServer.RunStrsChangeEvent += DataServer_RunStrsChangeEvent;
         WJ_Record_Local wr = null;
         if (App.Instance.Data.CurrentData.Records.Count > 0)
         {
@@ -72,7 +75,7 @@ public class UI_Camera : UI_Base
         }
         else
         {
-            Txt_Total.text = App.Instance.Data.Set.Total.ToString();
+            Txt_Total.text = App.Instance.Data.GetJcTotal().ToString();// App.Instance.Data.CurrentData.AllRecords.Count.ToString();
             Txt_Total.gameObject.SetActive(true);
             Img_Camera.gameObject.SetActive(false);
             Destroy(Img_Camera.texture);
@@ -81,16 +84,30 @@ public class UI_Camera : UI_Base
         {//计次
             Btn_JS.gameObject.SetActive(false);
             Txt_JS_Time.gameObject.SetActive(false);
+            Txt_Send_Js.gameObject.SetActive(false);
         }
         else
         {//计时
+            Btn_JS.gameObject.SetActive(true);
+            Txt_JS_Time.gameObject.SetActive(true);
+            Txt_Send_Js.gameObject.SetActive(true);
+
             if (App.Instance.Data.CurrentData.Records_JS.Count > 0)
             {
                 last_record_js = App.Instance.Data.CurrentData.Records_JS.Values.Last();
-                Js_Begin = string.IsNullOrEmpty(last_record_js.Data.EndPhotoID);
+                Js_Begin = last_record_js.State != 1;
                 last_record_js.BeginTime_T = System.Convert.ToDateTime(last_record_js.Data.BeginTime);
                 last_record_js.StartTime_T = last_record_js.BeginTime_T;
                 last_record_js.time = Time.time;
+
+                //========判断是否超时=====超时设置为结束
+                ts = System.DateTime.Now - last_record_js.BeginTime_T;
+                if (ts.TotalSeconds >= App.Instance.Data.Set.JSCD + last_record_js.AddTime)
+                {
+                    Js_Begin = false;
+                    App.Instance.Data.CurrentData.JsOver(last_record_js);
+                }
+
                 if (Js_Begin)
                 {
                     Txt_Js_Btn.text = "结 束";
@@ -104,22 +121,22 @@ public class UI_Camera : UI_Base
             {
                 Txt_Js_Btn.text = "开 始";
             }
-
-            Btn_JS.gameObject.SetActive(true);
-            Txt_JS_Time.gameObject.SetActive(true);
         }
         Data_ValueChange();
+        Data_GoodsChangeEvent();
     }
+
     public override void UI_End()
     {
         Img_Camera.gameObject.SetActive(false);
         App.Instance.InputEvent -= Btn_Capture_Click;
         App.Instance.Data.ValueChange -= Data_ValueChange;
-        App.Instance.Data.GoodsChangeEvent -= Data_GoodsChangeEvent;
-        App.Instance.DataServer.RunStrsChangeEvent -= DataServer_RunStrsChangeEvent;
+        //App.Instance.Data.GoodsChangeEvent -= Data_GoodsChangeEvent;
+        App.Instance.DataServer.RttChangeEvent -= DataServer_RttChangeEvent;
+        //App.Instance.DataServer.RunStrsChangeEvent -= DataServer_RunStrsChangeEvent;
         //cameraTexture.Stop();
     }
-    
+
     #region 抓拍
     private void Btn_Capture_Click()
     {
@@ -155,6 +172,7 @@ public class UI_Camera : UI_Base
     }
     IEnumerator jc_one_Action()
     {
+        yield return new WaitForSeconds(0.01f);
         yield return new WaitForEndOfFrame();
         try
         {
@@ -194,7 +212,7 @@ public class UI_Camera : UI_Base
             //===修改xml
             App.Instance.Data.Add(wj_photo, dt, DL_Goods.options[DL_Goods.value].text);
             PlayStartTime = Time.time;
-            Txt_Total.text = App.Instance.Data.Set.Total.ToString();
+            Txt_Total.text = App.Instance.Data.GetJcTotal().ToString();// App.Instance.Data.CurrentData.AllRecords.Count.ToString();
             Txt_Total.gameObject.SetActive(true);
             Img_Camera.gameObject.SetActive(false);
             Destroy(Img_Camera.texture);
@@ -203,7 +221,7 @@ public class UI_Camera : UI_Base
         }
         catch
         {
-            App.Instance.DataServer.AddStr("添加计次错误");
+            Debug.Log("添加计次错误");
         }
         Content.gameObject.SetActive(true);
         isPlay = true;
@@ -228,10 +246,12 @@ public class UI_Camera : UI_Base
             isPlay = false;
             Content.gameObject.SetActive(false);
             StartCoroutine(jc_two_Action());
+            //jc_two_Action_run = 1;
         }
     }
     IEnumerator jc_two_Action()
     {
+        yield return new WaitForSeconds(0.01f);
         yield return new WaitForEndOfFrame();
         try
         {
@@ -272,7 +292,7 @@ public class UI_Camera : UI_Base
             if (App.Instance.Data.Add(wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
             {//完成一车
                 PlayStartTime = Time.time + 1.1f - App.Instance.Data.Set.CD;//App.Instance.Data.Set.CD - Time.time + PlayStartTime=1
-                Txt_Total.text = App.Instance.Data.Set.Total.ToString();
+                Txt_Total.text = App.Instance.Data.GetJcTotal().ToString();// App.Instance.Data.CurrentData.AllRecords.Count.ToString();
                 Txt_Total.gameObject.SetActive(true);
                 Img_Camera.gameObject.SetActive(false);
                 Destroy(Img_Camera.texture);
@@ -288,7 +308,7 @@ public class UI_Camera : UI_Base
         }
         catch
         {
-            App.Instance.DataServer.AddStr("添加两次计次错误");
+            Debug.Log("添加两次计次错误");
         }
         Content.gameObject.SetActive(true);
         isPlay = true;
@@ -310,6 +330,7 @@ public class UI_Camera : UI_Base
     }
     IEnumerator Btn_Capture_Click2_Action()
     {
+        yield return new WaitForSeconds(0.01f);
         yield return new WaitForEndOfFrame();
         try
         {
@@ -366,7 +387,7 @@ public class UI_Camera : UI_Base
         }
         catch
         {
-            App.Instance.DataServer.AddStr("添加计时记录错误");
+            Debug.Log("添加计时记录错误");
         }
         Content.gameObject.SetActive(true);
         isPlay = true;
@@ -436,34 +457,34 @@ public class UI_Camera : UI_Base
     {
         DL_Goods.onValueChanged.RemoveAllListeners();
         DL_Goods.options.Clear();
-        string goods_save = UnityEngine.PlayerPrefs.GetString("goods_set");
-        int goods_value = 0;
-        for (int i = 0; i < App.Instance.Data.Goods.Count; i++)
+        if (App.Instance.Data.Goods.Count > 0)
         {
-            Dropdown.OptionData od = new Dropdown.OptionData();
-            od.text = App.Instance.Data.Goods[i].GoodsName;
-            if (od.text == goods_save)
+            string goods_save = UnityEngine.PlayerPrefs.GetString("goods_set");
+            int goods_value = 0;
+            for (int i = 0; i < App.Instance.Data.Goods.Count; i++)
             {
-                goods_value = i;
+                Dropdown.OptionData od = new Dropdown.OptionData();
+                od.text = App.Instance.Data.Goods[i].GoodsName;
+                if (od.text == goods_save)
+                {
+                    goods_value = i;
+                }
+                DL_Goods.options.Add(od);
             }
-            DL_Goods.options.Add(od);
+            DL_Goods.onValueChanged.AddListener(GoodsSelect);
+            DL_Goods.value = goods_value;
+            DL_Goods.captionText.text = DL_Goods.options[goods_value].text;
         }
-        DL_Goods.onValueChanged.AddListener(GoodsSelect);
-        DL_Goods.value = goods_value;
-        DL_Goods.captionText.text = DL_Goods.options[goods_value].text;
     }
     void Data_ValueChange()
     {
-        Txt_Send.text = string.Format("已上传<color=#00ff00ff>{1}</color>车，总共<color=#00ff00ff>{0}</color>车", App.Instance.Data.Set.Total, App.Instance.Data.Set.Total - App.Instance.Data.LocalCount);
-        int record_count = 0; int photo_count = 0;
-        for (int i = 0; i < App.Instance.Data.OldDatas.Count; i++)
-        {
-            record_count = App.Instance.Data.OldDatas[i].Records_Submit.Count;
-            photo_count = App.Instance.Data.OldDatas[i].PhotosSubmit.Count;
-        }
-        record_count += App.Instance.Data.CurrentData.Records_Submit.Count;
-        photo_count += App.Instance.Data.CurrentData.PhotosSubmit.Count;
-        //Txt_NotSend.text = string.Format("剩余<color=#00ff00ff>{0}</color>条记录,<color=#00ff00ff>{1}</color>张照片", record_count, photo_count);
+        int total_js,total_jc,local_js,local_jc, up_jc,up_js;
+        App.Instance.Data.GetTotal(out total_jc, out total_js);
+        App.Instance.Data.GetLocal(out local_jc, out local_js);
+        up_jc = total_jc - local_jc;
+        up_js= total_js - local_js;
+        Txt_Send_Jc.text = string.Format("已上传<color=#00ff00ff>{0}</color>车，总共<color=#00ff00ff>{1}</color>车", up_jc, total_jc);
+        Txt_Send_Js.text = string.Format("已上传<color=#00ff00ff>{0}</color>条计时，总共<color=#00ff00ff>{1}</color>条", up_js, total_js);
     }
     private void GoodsSelect(int value)
     {
@@ -474,7 +495,11 @@ public class UI_Camera : UI_Base
     {
         if (App.Instance.DataServer.State == ClientStat.ConnFail)
         {
-            if (Time.time - ConnFailStartTime >= 1)
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                return;
+            }
+            else if (Time.time - ConnFailStartTime >= 1)
             {
                 ConnFailStartTime = Time.time;
                 float t = App.Instance.DataServer.ConnCD - Time.time + App.Instance.DataServer.ConnStartTime;
@@ -517,7 +542,7 @@ public class UI_Camera : UI_Base
 
     }
 
-    private float ConnFailStartTime = 0;
+    private float ConnFailStartTime = -100;
     private System.TimeSpan ts,ts2;
     private System.DateTime time_old;
 }
