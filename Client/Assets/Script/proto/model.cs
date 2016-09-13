@@ -124,6 +124,47 @@ namespace google.protobuf
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
   }
   
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"VolumeResponse")]
+  public partial class VolumeResponse : global::ProtoBuf.IExtensible
+  {
+    public VolumeResponse() {}
+    
+    private readonly global::System.Collections.Generic.List<google.protobuf.VolumeResponse.Volume> _result = new global::System.Collections.Generic.List<google.protobuf.VolumeResponse.Volume>();
+    [global::ProtoBuf.ProtoMember(1, Name=@"result", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public global::System.Collections.Generic.List<google.protobuf.VolumeResponse.Volume> result
+    {
+      get { return _result; }
+    }
+  
+  [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"Volume")]
+  public partial class Volume : global::ProtoBuf.IExtensible
+  {
+    public Volume() {}
+    
+    private string _VolumeID;
+    [global::ProtoBuf.ProtoMember(1, IsRequired = true, Name=@"VolumeID", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string VolumeID
+    {
+      get { return _VolumeID; }
+      set { _VolumeID = value; }
+    }
+    private string _VolumeName;
+    [global::ProtoBuf.ProtoMember(2, IsRequired = true, Name=@"VolumeName", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    public string VolumeName
+    {
+      get { return _VolumeName; }
+      set { _VolumeName = value; }
+    }
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
+    private global::ProtoBuf.IExtension extensionObject;
+    global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+      { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
+  }
+  
   [global::System.Serializable, global::ProtoBuf.ProtoContract(Name=@"WJ_Record")]
   public partial class WJ_Record : global::ProtoBuf.IExtensible
   {
@@ -219,6 +260,14 @@ namespace google.protobuf
     {
       get { return _Mode; }
       set { _Mode = value; }
+    }
+    private float _Volum = default(float);
+    [global::ProtoBuf.ProtoMember(14, IsRequired = false, Name=@"Volum", DataFormat = global::ProtoBuf.DataFormat.FixedSize)]
+    [global::System.ComponentModel.DefaultValue(default(float))]
+    public float Volum
+    {
+      get { return _Volum; }
+      set { _Volum = value; }
     }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)

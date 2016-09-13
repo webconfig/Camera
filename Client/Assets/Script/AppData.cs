@@ -16,6 +16,7 @@ public class AppData
         InitSet();
         InitDataFile();
         InitGoods();
+        InitVolume();
     }
 
     #region 配置
@@ -304,7 +305,7 @@ public class AppData
             record.Data.ID = long.Parse(node.Attributes["ID"].InnerText);
             record.Data.WorkSpace = node.Attributes["WorkSpace"].InnerText;
             record.Data.GoodsName = node.Attributes["GoodsName"].InnerText;
-
+            record.Data.Volum = node.Attributes["Volum"]==null? 0: float.Parse(node.Attributes["Volum"].InnerText);
             record.Data.BeginTime = node.Attributes["BeginTime"].InnerText;
             record.Data.EndTime = node.Attributes["EndTime"].InnerText;
             record.Data.BgeinPhotoID = node.Attributes["BgeinPhotoID"].InnerText;
@@ -445,7 +446,7 @@ public class AppData
     #endregion
 
     #region 计次
-    public bool Add(WJ_Photo_Local wj_photo, DateTime dt, string GoodsName)
+    public bool Add(WJ_Photo_Local wj_photo, DateTime dt, string GoodsName,string Volume)
     {
         bool need_save = false;
         #region 修改计时
@@ -512,6 +513,7 @@ public class AppData
             wj_record.Data.ID = dt.Ticks;
             wj_record.Data.WorkSpace = App.Instance.Data.Set.Place;
             wj_record.Data.GoodsName = GoodsName;
+            wj_record.Data.Volum =float.Parse(Volume);
             wj_record.Data.BeginTime = wj_photo.Data.AtTime;
             wj_record.Data.EndTime = wj_photo.Data.AtTime;
             wj_record.Data.BgeinPhotoID = wj_photo.Data.PhotoID;
@@ -540,6 +542,7 @@ public class AppData
             node_data.SetAttribute("ID", wj_record.Data.ID.ToString());
             node_data.SetAttribute("WorkSpace", wj_record.Data.WorkSpace);
             node_data.SetAttribute("GoodsName", wj_record.Data.GoodsName);
+            node_data.SetAttribute("Volum", wj_record.Data.Volum.ToString());
             node_data.SetAttribute("BeginTime", wj_record.Data.BeginTime);
             node_data.SetAttribute("EndTime", wj_record.Data.EndTime);
             node_data.SetAttribute("BgeinPhotoID", wj_record.Data.BgeinPhotoID);
@@ -610,6 +613,7 @@ public class AppData
                 wj_record.Data.ID = dt.Ticks;
                 wj_record.Data.WorkSpace = App.Instance.Data.Set.Place;
                 wj_record.Data.GoodsName = GoodsName;
+                wj_record.Data.Volum =float.Parse(Volume);
                 wj_record.Data.BeginTime = wj_photo.Data.AtTime;
                 wj_record.Data.EndTime = wj_photo.Data.AtTime;
                 //wj_record.EndTime_T = DateTime.MinValue;
@@ -639,6 +643,7 @@ public class AppData
                 node_data.SetAttribute("ID", wj_record.Data.ID.ToString());
                 node_data.SetAttribute("WorkSpace", wj_record.Data.WorkSpace);
                 node_data.SetAttribute("GoodsName", wj_record.Data.GoodsName);
+                node_data.SetAttribute("Volum", wj_record.Data.Volum.ToString());
                 node_data.SetAttribute("BeginTime", wj_record.Data.BeginTime);
                 node_data.SetAttribute("EndTime", wj_record.Data.EndTime);
                 node_data.SetAttribute("BgeinPhotoID", wj_record.Data.BgeinPhotoID);
@@ -718,7 +723,7 @@ public class AppData
     #endregion
 
     #region 计时
-    public bool Add_JS(WJ_Photo_Local wj_photo, System.DateTime dt, string GoodsName)
+    public bool Add_JS(WJ_Photo_Local wj_photo, System.DateTime dt, string GoodsName,string Volume)
     {
         #region 时间判断
         TimeSpan ts = System.DateTime.Now.Date - StartTime;
@@ -756,6 +761,7 @@ public class AppData
             wj_record.Data.ID = dt.Ticks;
             wj_record.Data.WorkSpace = App.Instance.Data.Set.Place;
             wj_record.Data.GoodsName = GoodsName;
+            wj_record.Data.Volum =float.Parse(Volume);
             wj_record.Data.BgeinPhotoID = wj_photo.Data.PhotoID;
             wj_record.BeginTime_T = dt;
             wj_record.StartTime_T = dt;
@@ -786,6 +792,7 @@ public class AppData
             node_data.SetAttribute("ID", wj_record.Data.ID.ToString());
             node_data.SetAttribute("WorkSpace", wj_record.Data.WorkSpace);
             node_data.SetAttribute("GoodsName", wj_record.Data.GoodsName);
+            node_data.SetAttribute("Volum", wj_record.Data.Volum.ToString());
             node_data.SetAttribute("BeginTime", wj_record.Data.BeginTime);
             node_data.SetAttribute("EndTime", wj_record.Data.EndTime);
             node_data.SetAttribute("BgeinPhotoID", wj_record.Data.BgeinPhotoID);
@@ -873,7 +880,7 @@ public class AppData
     }
     #endregion
 
-    #region Goods
+    #region 物料类型
     public string GoodsFileName="goods.xml";
     public string GoodsFilePath;
     public XmlDocument Goods_Xml;
@@ -965,6 +972,101 @@ public class AppData
             }
         }
         Goods_Xml.Save(GoodsFilePath);
+    }
+    #endregion
+
+    #region Volume
+    public string VolumeFileName = "volume.xml";
+    public string VolumeFilePath;
+    public XmlDocument Volume_Xml;
+    public XmlNode Volume_parent;
+    public List<VolumeResponse.Volume> Volume;
+    //public bool VolumeChange;
+    private void InitVolume()
+    {
+        Volume_Xml = new XmlDocument();
+        Volume = new List<VolumeResponse.Volume>();
+        VolumeFilePath = string.Format("{0}/{1}", Application.persistentDataPath, VolumeFileName);
+        if (!File.Exists(VolumeFilePath))
+        {
+            string StreamFilePath;
+#if UNITY_EDITOR
+            StreamFilePath = string.Format(@"Assets/StreamingAssets/{0}", VolumeFileName);
+            File.Copy(StreamFilePath, VolumeFilePath);
+#else
+#if UNITY_ANDROID 
+            var loadDb = new WWW("jar:file://" + Application.dataPath + "!/assets/" + VolumeFileName);
+            while (!loadDb.isDone) { }
+            File.WriteAllBytes(VolumeFilePath, loadDb.bytes);
+#endif
+#endif
+        }
+        string str = File.ReadAllText(VolumeFilePath);
+        Volume_Xml.LoadXml(str);
+        Volume_parent = Volume_Xml.SelectSingleNode("root");
+        XmlNodeList nodes = Volume_parent.SelectNodes("item");
+        XmlNode node;
+        for (int i = 0; i < nodes.Count; i++)
+        {
+            node = nodes[i];
+            VolumeResponse.Volume good = new VolumeResponse.Volume();
+            good.VolumeID = node.Attributes["VolumeID"].Value;
+            good.VolumeName = node.Attributes["VolumeName"].Value;
+            Volume.Add(good);
+        }
+    }
+    public void AddVolume(VolumeResponse response)
+    {
+        Volume.Clear();
+        Volume_parent.RemoveAll();
+        VolumeResponse.Volume Volume_item;
+        for (int i = 0; i < response.result.Count; i++)
+        {
+            Volume_item = response.result[i];
+            XmlElement node_photo = App.Instance.Data.Volume_Xml.CreateElement("item");
+            node_photo.SetAttribute("VolumeID", Volume_item.VolumeID);
+            node_photo.SetAttribute("VolumeName", Volume_item.VolumeName);
+            Volume_parent.AppendChild(node_photo);
+            Volume.Add(Volume_item);
+        }
+        Volume_Xml.Save(VolumeFilePath);
+        //VolumeChange = true;
+    }
+    public void AddVolume(string id, string name)
+    {
+        VolumeResponse.Volume Volume_item = new VolumeResponse.Volume();
+        Volume_item.VolumeID = id;
+        Volume_item.VolumeName = name;
+
+        XmlElement node_photo = App.Instance.Data.Volume_Xml.CreateElement("item");
+        node_photo.SetAttribute("VolumeID", Volume_item.VolumeID);
+        node_photo.SetAttribute("VolumeName", Volume_item.VolumeName);
+        Volume_parent.AppendChild(node_photo);
+        Volume.Add(Volume_item);
+        Volume_Xml.Save(VolumeFilePath);
+    }
+    public void RemoveVolume(string id)
+    {
+        XmlNodeList nodes = Volume_parent.SelectNodes("item");
+        XmlNode node;
+        for (int j = 0; j < nodes.Count; j++)
+        {
+            node = nodes[j];
+            if (string.Equals(node.Attributes["VolumeID"].Value, id))
+            {
+                Volume_parent.RemoveChild(node);
+                break;
+            }
+        }
+        for (int i = 0; i < Volume.Count; i++)
+        {
+            if (Volume[i].VolumeID == id)
+            {
+                Volume.RemoveAt(i);
+                break;
+            }
+        }
+        Volume_Xml.Save(VolumeFilePath);
     }
     #endregion
 

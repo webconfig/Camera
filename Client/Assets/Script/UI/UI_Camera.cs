@@ -7,18 +7,17 @@ public class UI_Camera : UI_Base
 {
     public GameObject Content;
     public EasyAR.CameraDeviceBehaviour CameraDevice;
-    //WebCamTexture cameraTexture;
-    //string cameraName = "";
     private bool isPlay = true;
     private float PlayStartTime=-10000;
     public Button Btn_Capture, Btn_Look, Btn_Close, Btn_Set,Btn_JS;
     public Text Txt_WJ_Code, Txt_Goods, Txt_Send_Js, Txt_Send_Jc, Txt_Time,Txt_Total,Txt_JS_Time,Txt_Js_Btn,Txt_NetWork,Txt_RunStrs,Txt_NowTime;
-    public Dropdown DL_Goods;
+    public Dropdown DL_Goods, DL_Volum;
     public RawImage Img_Camera;
     private Texture2D snap;
     private Color[] cRes;
     private bool Js_Begin = false;
     private WJ_Record_Local last_record_js;
+    private bool has_goods, has_volum;
 
     public override void UI_Init()
     {
@@ -124,8 +123,8 @@ public class UI_Camera : UI_Base
         }
         Data_ValueChange();
         Data_GoodsChangeEvent();
+        Data_VolumChangeEvent();
     }
-
     public override void UI_End()
     {
         Img_Camera.gameObject.SetActive(false);
@@ -210,7 +209,7 @@ public class UI_Camera : UI_Base
             File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
             #endregion
             //===修改xml
-            App.Instance.Data.Add(wj_photo, dt, DL_Goods.options[DL_Goods.value].text);
+            App.Instance.Data.Add(wj_photo, dt, has_goods? DL_Goods.options[DL_Goods.value].text:"",has_volum ? DL_Volum.options[DL_Volum.value].text : "0");
             PlayStartTime = Time.time;
             Txt_Total.text = App.Instance.Data.GetJcTotal().ToString();// App.Instance.Data.CurrentData.AllRecords.Count.ToString();
             Txt_Total.gameObject.SetActive(true);
@@ -289,7 +288,7 @@ public class UI_Camera : UI_Base
             File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
             #endregion
             //===修改xml
-            if (App.Instance.Data.Add(wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
+            if (App.Instance.Data.Add(wj_photo, dt, has_goods ? DL_Goods.options[DL_Goods.value].text : "", has_volum ? DL_Volum.options[DL_Volum.value].text : "0"))
             {//完成一车
                 PlayStartTime = Time.time + 1.1f - App.Instance.Data.Set.CD;//App.Instance.Data.Set.CD - Time.time + PlayStartTime=1
                 Txt_Total.text = App.Instance.Data.GetJcTotal().ToString();// App.Instance.Data.CurrentData.AllRecords.Count.ToString();
@@ -368,7 +367,7 @@ public class UI_Camera : UI_Base
             File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
             #endregion
             //===修改xml
-            if (App.Instance.Data.Add_JS(wj_photo, dt, DL_Goods.options[DL_Goods.value].text))
+            if (App.Instance.Data.Add_JS(wj_photo, dt, has_goods ? DL_Goods.options[DL_Goods.value].text : "", has_volum ? DL_Volum.options[DL_Volum.value].text : "0"))
             {
                 Txt_JS_Time.text = "00:00:00";
                 Txt_Js_Btn.text = "结 束";
@@ -421,27 +420,6 @@ public class UI_Camera : UI_Base
         photo.Apply();
         return photo;
     }
-    //IEnumerator WebCamRun()
-    //{
-    //    yield return Application.RequestUserAuthorization(UserAuthorization.WebCam);
-    //    if (Application.HasUserAuthorization(UserAuthorization.WebCam))
-    //    {
-    //        WebCamDevice[] devices = WebCamTexture.devices;
-    //        cameraName = devices[0].name;
-    //        cameraTexture = new WebCamTexture(cameraName, Screen.width, Screen.height);
-    //        obj.texture = cameraTexture;
-    //        obj.material.mainTexture = cameraTexture;
-    //        cameraTexture.Play();
-    //        width = cameraTexture.width;
-    //        height = cameraTexture.height;
-    //        cRes = cameraTexture.GetPixels();
-    //        isPlay = true;
-    //    }
-    //    else
-    //    {
-    //        TipsManager.Instance.Error("没有访问摄像头的权限");
-    //    }
-    //}
     private int width,height;
 
     #region 页面内容
@@ -459,6 +437,7 @@ public class UI_Camera : UI_Base
         DL_Goods.options.Clear();
         if (App.Instance.Data.Goods.Count > 0)
         {
+            has_goods = true;
             string goods_save = UnityEngine.PlayerPrefs.GetString("goods_set");
             int goods_value = 0;
             for (int i = 0; i < App.Instance.Data.Goods.Count; i++)
@@ -475,6 +454,40 @@ public class UI_Camera : UI_Base
             DL_Goods.value = goods_value;
             DL_Goods.captionText.text = DL_Goods.options[goods_value].text;
         }
+        else
+        {
+            has_goods = false;
+            DL_Goods.captionText.text = "";
+        }
+    }
+    void Data_VolumChangeEvent()
+    {
+        DL_Volum.onValueChanged.RemoveAllListeners();
+        DL_Volum.options.Clear();
+        if (App.Instance.Data.Volume.Count > 0)
+        {
+            has_volum = true;
+            string volum_save = UnityEngine.PlayerPrefs.GetString("volum_set");
+            int volum_value = 0;
+            for (int i = 0; i < App.Instance.Data.Volume.Count; i++)
+            {
+                Dropdown.OptionData od = new Dropdown.OptionData();
+                od.text = App.Instance.Data.Volume[i].VolumeName;
+                if (od.text == volum_save)
+                {
+                    volum_value = i;
+                }
+                DL_Volum.options.Add(od);
+            }
+            DL_Volum.onValueChanged.AddListener(VolumeSelect);
+            DL_Volum.value = volum_value;
+            DL_Volum.captionText.text = DL_Volum.options[volum_value].text;
+        }
+        else
+        {
+            has_volum = false;
+            DL_Volum.captionText.text = "";
+        }
     }
     void Data_ValueChange()
     {
@@ -489,6 +502,10 @@ public class UI_Camera : UI_Base
     private void GoodsSelect(int value)
     {
         PlayerPrefs.SetString("goods_set", DL_Goods.options[DL_Goods.value].text);
+    }
+    private void VolumeSelect(int value)
+    {
+        PlayerPrefs.SetString("volum_set", DL_Volum.options[DL_Volum.value].text);
     }
     #endregion
     void Update()

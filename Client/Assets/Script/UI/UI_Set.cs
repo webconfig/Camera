@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 /// </summary>
 public class UI_Set : UI_Base
 {
-    public Button Btn_OK, Btn_Back, Btn_Login,Btn_Goods_Add;
+    public Button Btn_OK, Btn_Back, Btn_Login,Btn_Goods_Add, Btn_Volum_Add;
     public InputField Input_Login_Pwd, Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_Password_Local, Input_CD, Input_CD1, Input_JSCD, Input_Day;
     public Toggle Tog_JC, Tog_JCJS, Tog_JC_One, Tog_JC_Two;
     private WJ_Set Set;
@@ -19,7 +19,9 @@ public class UI_Set : UI_Base
         Btn_OK.onClick.AddListener(Btn_OK_Click);
         Btn_Login.onClick.AddListener(Btn_Set_Login);
         Btn_Goods_Add.onClick.AddListener(AddGoods);
+        Btn_Volum_Add.onClick.AddListener(AddVolume);
         table_goods.RowDeleteEvent += Table_goods_RowDeleteEvent;
+        table_Volume.RowDeleteEvent += Table_Volume_RowDeleteEvent;
         InitTab();
     }
 
@@ -76,6 +78,7 @@ public class UI_Set : UI_Base
             Tog_JC_Two.isOn = true;
         }
         ShowGoods();
+        ShowVolume();
     }
     private void Btn_Set_Login()
     {
@@ -249,15 +252,15 @@ public class UI_Set : UI_Base
     }
 
     //==============
-    public UI_Control_Table table_goods;
-    public Toggle Tog_UserInfo, Top_Work, Tog_Server, Top_Goods;
-    public GameObject Content_UserInfo, Content_Work, Content_Server, Content_Goods, Content_Current;
+    public Toggle Tog_UserInfo, Top_Work, Tog_Server, Top_Goods,Tog_Volum;
+    public GameObject Content_UserInfo, Content_Work, Content_Server, Content_Goods, Content_Volum, Content_Current;
     public void InitTab()
     {
         Tog_UserInfo.onValueChanged.AddListener(ShowUserInfo);
         Top_Work.onValueChanged.AddListener(ShowWork);
         Tog_Server.onValueChanged.AddListener(ShowServer);
         Top_Goods.onValueChanged.AddListener(ShowGoods);
+        Tog_Volum.onValueChanged.AddListener(ShowVolum);
     }
     public void ShowUserInfo(bool _select)
     {
@@ -295,7 +298,17 @@ public class UI_Set : UI_Base
         Content_Goods.SetActive(true);
         Content_Current = Content_Goods;
     }
-    //=====
+    public void ShowVolum(bool _select)
+    {
+        if (Content_Current != null)
+        {
+            Content_Current.SetActive(false);
+        }
+        Content_Volum.SetActive(true);
+        Content_Current = Content_Volum;
+    }
+    //=====物料=====
+    public UI_Control_Table table_goods;
     public InputField input_goods;
     private void ShowGoods()
     {
@@ -326,5 +339,38 @@ public class UI_Set : UI_Base
     {
         App.Instance.Data.RemoveGoods(row.datas["id"]);
         table_goods.RemoveRow(row);
+    }
+    //=====方量=====
+    public UI_Control_Table table_Volume;
+    public InputField input_Volume;
+    private void ShowVolume()
+    {
+        table_Volume.Clear();
+        for (int i = 0; i < App.Instance.Data.Volume.Count; i++)
+        {
+            Dictionary<string, string> data_row = new Dictionary<string, string>();
+            data_row.Add("id", App.Instance.Data.Volume[i].VolumeID);
+            data_row.Add("name", App.Instance.Data.Volume[i].VolumeName);
+            table_Volume.AddRow(data_row, null);
+        }
+    }
+    private void AddVolume()
+    {
+        string str = input_Volume.text;
+        if (string.IsNullOrEmpty(str))
+        {
+            TipsManager.Instance.Error("方量为空！");
+            return;
+        }
+        App.Instance.Data.AddVolume(str, str);
+        Dictionary<string, string> data_row = new Dictionary<string, string>();
+        data_row.Add("id", str);
+        data_row.Add("name", str);
+        table_Volume.AddRow(data_row, null);
+    }
+    private void Table_Volume_RowDeleteEvent(UI_Control_Table_Row row)
+    {
+        App.Instance.Data.RemoveVolume(row.datas["id"]);
+        table_Volume.RemoveRow(row);
     }
 }
