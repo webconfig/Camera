@@ -20,6 +20,13 @@ message GoodsResponse {
   }
   repeated WJ_Goods result = 1;
 }
+message VolumeResponse {
+  message Volume {
+    required string VolumeID = 1;
+    required string VolumeName = 2;
+  }
+  repeated Volume result = 1;
+}
 message WJ_Record {
     required int64 SeqID=1;
     required int64 CustomerID=2;
@@ -34,6 +41,7 @@ message WJ_Record {
     required float longitude=11;
     required float Latitude=12;
     required int32 Mode=13;
+	optional float Volum=14;
 }
 message RecordResponse {
   required int64 record_id = 1;
