@@ -42,7 +42,7 @@ public class DataRecv
                     response_login.Result = "0";
                     Debug.Info("登录失败");
                 }
-                ////====== 测试 ========================
+                //====== 测试 ========================
                 //response_login.Result = "1.0";
                 //response_login.Url = "www.baidu.com";
                 //Debug.Info("登录成功");
@@ -93,7 +93,7 @@ public class DataRecv
                 }
                 ////=== 测试 ===
                 //response_record.record_id = request_record.ID;
-
+                //decimal k = request_record.Volum > 0 ? Convert.ToDecimal(request_record.Volum) : 0;
                 //===数据库
                 WJ_Record_Submit record_submit = new WJ_Record_Submit
                 {
@@ -109,6 +109,7 @@ public class DataRecv
                     longitude = request_record.longitude,
                     Latitude = request_record.Latitude,
                     Mode = request_record.Mode,
+                    Volume= request_record.Volum>0? Convert.ToDecimal(request_record.Volum):0,
                     State = state
                 };
                 Db.Context.Insert<WJ_Record_Submit>(record_submit);
@@ -136,7 +137,8 @@ public class DataRecv
                         longitude = request_record.longitude,
                         Latitude = request_record.Latitude,
                         Mode = request_record.Mode,
-                        State = state
+                        State = state,
+                        Volume = request_record.Volum > 0 ? Convert.ToDecimal(request_record.Volum) : 0,
                     };
                     num = Db.Context.Insert<Dos.Model.WJ_Record>(record);
                     if (num == 1)

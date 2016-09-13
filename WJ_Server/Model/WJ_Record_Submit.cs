@@ -36,6 +36,7 @@ namespace Dos.Model
         private int _Mode;
         private string _TruckID;
         private int _State;
+        private decimal _Volume;
 
         /// <summary>
         /// 自增字段（用于传输）
@@ -232,6 +233,19 @@ namespace Dos.Model
                 this._State = value;
             }
         }
+        /// <summary>
+        /// 方量
+        /// </summary>
+        [Field("Volume")]
+        public decimal Volume
+        {
+            get { return _Volume; }
+            set
+            {
+                this.OnPropertyValueChange("Volume");
+                this._Volume = value;
+            }
+        }
         #endregion
 
         #region Method
@@ -241,8 +255,8 @@ namespace Dos.Model
         public override Field[] GetPrimaryKeyFields()
         {
             return new Field[] {
-				_.SeqID,
-			};
+                _.SeqID,
+            };
         }
         /// <summary>
         /// 获取实体中的标识列
@@ -257,22 +271,23 @@ namespace Dos.Model
         public override Field[] GetFields()
         {
             return new Field[] {
-				_.SeqID,
-				_.CustomerID,
-				_.WJID,
-				_.ID,
-				_.WorkSpace,
-				_.GoodsName,
-				_.BeginTime,
-				_.EndTime,
-				_.BeginPhotoID,
-				_.EndPhotoID,
-				_.longitude,
-				_.Latitude,
-				_.Mode,
-				_.TruckID,
-				_.State,
-			};
+                _.SeqID,
+                _.CustomerID,
+                _.WJID,
+                _.ID,
+                _.WorkSpace,
+                _.GoodsName,
+                _.BeginTime,
+                _.EndTime,
+                _.BeginPhotoID,
+                _.EndPhotoID,
+                _.longitude,
+                _.Latitude,
+                _.Mode,
+                _.TruckID,
+                _.State,
+                _.Volume,
+            };
         }
         /// <summary>
         /// 获取值信息
@@ -280,22 +295,23 @@ namespace Dos.Model
         public override object[] GetValues()
         {
             return new object[] {
-				this._SeqID,
-				this._CustomerID,
-				this._WJID,
-				this._ID,
-				this._WorkSpace,
-				this._GoodsName,
-				this._BeginTime,
-				this._EndTime,
-				this._BeginPhotoID,
-				this._EndPhotoID,
-				this._longitude,
-				this._Latitude,
-				this._Mode,
-				this._TruckID,
-				this._State,
-			};
+                this._SeqID,
+                this._CustomerID,
+                this._WJID,
+                this._ID,
+                this._WorkSpace,
+                this._GoodsName,
+                this._BeginTime,
+                this._EndTime,
+                this._BeginPhotoID,
+                this._EndPhotoID,
+                this._longitude,
+                this._Latitude,
+                this._Mode,
+                this._TruckID,
+                this._State,
+                this._Volume,
+            };
         }
         /// <summary>
         /// 是否是v1.10.5.6及以上版本实体。
@@ -318,65 +334,69 @@ namespace Dos.Model
             /// </summary>
             public readonly static Field All = new Field("*", "WJ_Record_Submit");
             /// <summary>
-            /// 自增字段（用于传输）
-            /// </summary>
-            public readonly static Field SeqID = new Field("SeqID", "WJ_Record_Submit", "自增字段（用于传输）");
+			/// 自增字段（用于传输）
+			/// </summary>
+			public readonly static Field SeqID = new Field("SeqID", "WJ_Record_Submit", "自增字段（用于传输）");
             /// <summary>
-            /// 客户ID
-            /// </summary>
-            public readonly static Field CustomerID = new Field("CustomerID", "WJ_Record_Submit", "客户ID");
+			/// 客户ID
+			/// </summary>
+			public readonly static Field CustomerID = new Field("CustomerID", "WJ_Record_Submit", "客户ID");
             /// <summary>
-            /// 挖机编号
-            /// </summary>
-            public readonly static Field WJID = new Field("WJID", "WJ_Record_Submit", "挖机编号");
+			/// 挖机编号
+			/// </summary>
+			public readonly static Field WJID = new Field("WJID", "WJ_Record_Submit", "挖机编号");
             /// <summary>
-            /// ID, 取时间戳
-            /// </summary>
-            public readonly static Field ID = new Field("ID", "WJ_Record_Submit", "ID, 取时间戳");
+			/// ID, 取时间戳
+			/// </summary>
+			public readonly static Field ID = new Field("ID", "WJ_Record_Submit", "ID, 取时间戳");
             /// <summary>
-            /// 作业地点
-            /// </summary>
-            public readonly static Field WorkSpace = new Field("WorkSpace", "WJ_Record_Submit", "作业地点");
+			/// 作业地点
+			/// </summary>
+			public readonly static Field WorkSpace = new Field("WorkSpace", "WJ_Record_Submit", "作业地点");
             /// <summary>
-            /// 物料类型
-            /// </summary>
-            public readonly static Field GoodsName = new Field("GoodsName", "WJ_Record_Submit", "物料类型");
+			/// 物料类型
+			/// </summary>
+			public readonly static Field GoodsName = new Field("GoodsName", "WJ_Record_Submit", "物料类型");
             /// <summary>
-            /// 起始时间
-            /// </summary>
-            public readonly static Field BeginTime = new Field("BeginTime", "WJ_Record_Submit", "起始时间");
+			/// 起始时间
+			/// </summary>
+			public readonly static Field BeginTime = new Field("BeginTime", "WJ_Record_Submit", "起始时间");
             /// <summary>
-            /// 结束时间
-            /// </summary>
-            public readonly static Field EndTime = new Field("EndTime", "WJ_Record_Submit", "结束时间");
+			/// 结束时间
+			/// </summary>
+			public readonly static Field EndTime = new Field("EndTime", "WJ_Record_Submit", "结束时间");
             /// <summary>
-            /// 开始图片ID
-            /// </summary>
-            public readonly static Field BeginPhotoID = new Field("BeginPhotoID", "WJ_Record_Submit", "开始图片ID");
+			/// 开始图片ID
+			/// </summary>
+			public readonly static Field BeginPhotoID = new Field("BeginPhotoID", "WJ_Record_Submit", "开始图片ID");
             /// <summary>
-            /// 结束图片ID
-            /// </summary>
-            public readonly static Field EndPhotoID = new Field("EndPhotoID", "WJ_Record_Submit", "结束图片ID");
+			/// 结束图片ID
+			/// </summary>
+			public readonly static Field EndPhotoID = new Field("EndPhotoID", "WJ_Record_Submit", "结束图片ID");
             /// <summary>
-            /// GPS精度
-            /// </summary>
-            public readonly static Field longitude = new Field("longitude", "WJ_Record_Submit", "GPS精度");
+			/// GPS精度
+			/// </summary>
+			public readonly static Field longitude = new Field("longitude", "WJ_Record_Submit", "GPS精度");
             /// <summary>
-            /// GPS维度
-            /// </summary>
-            public readonly static Field Latitude = new Field("Latitude", "WJ_Record_Submit", "GPS维度");
+			/// GPS维度
+			/// </summary>
+			public readonly static Field Latitude = new Field("Latitude", "WJ_Record_Submit", "GPS维度");
             /// <summary>
-            /// 数据类型； 0:表示 计次； 1：表示计时
-            /// </summary>
-            public readonly static Field Mode = new Field("Mode", "WJ_Record_Submit", "数据类型； 0:表示 计次； 1：表示计时");
+			/// 数据类型； 0:表示 计次； 1：表示计时
+			/// </summary>
+			public readonly static Field Mode = new Field("Mode", "WJ_Record_Submit", "数据类型； 0:表示 计次； 1：表示计时");
             /// <summary>
-            /// 
-            /// </summary>
-            public readonly static Field TruckID = new Field("TruckID", "WJ_Record_Submit", "");
+			/// 
+			/// </summary>
+			public readonly static Field TruckID = new Field("TruckID", "WJ_Record_Submit", "");
             /// <summary>
-            /// 
-            /// </summary>
-            public readonly static Field State = new Field("State", "WJ_Record_Submit", "");
+			/// 
+			/// </summary>
+			public readonly static Field State = new Field("State", "WJ_Record_Submit", "");
+            /// <summary>
+			/// 方量
+			/// </summary>
+			public readonly static Field Volume = new Field("Volume", "WJ_Record_Submit", "方量");
         }
         #endregion
     }
