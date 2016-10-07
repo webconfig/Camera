@@ -8,16 +8,16 @@ public class UI_Camera : UI_Base
     public GameObject Content;
     public EasyAR.CameraDeviceBehaviour CameraDevice;
     private bool isPlay = true;
-    private float PlayStartTime=-10000;
     public Button Btn_Capture, Btn_Look, Btn_Close, Btn_Set,Btn_JS;
     public Text Txt_WJ_Code, Txt_Goods, Txt_Send_Js, Txt_Send_Jc, Txt_Time,Txt_Total,Txt_JS_Time,Txt_Js_Btn,Txt_NetWork,Txt_RunStrs,Txt_NowTime;
-    public Dropdown DL_Goods, DL_Volum;
+    public Dropdown DL_Goods, DL_Volum,DL_Place;
     public RawImage Img_Camera;
     private Texture2D snap;
     private Color[] cRes;
     private bool Js_Begin = false;
     private WJ_Record_Local last_record_js;
-    private bool has_goods, has_volum;
+    private bool has_goods, has_volum,has_place;
+    private Vector3 Txt_NetWork_Position;
 
     public override void UI_Init()
     {
@@ -27,10 +27,26 @@ public class UI_Camera : UI_Base
         Btn_Close.onClick.AddListener(Btn_Close_Click);
         Btn_Set.onClick.AddListener(Btn_Set_Click);
         //Txt_Send.text = string.Format("已上传<color=#00ff00ff>{1}</color>车，总共<color=#00ff00ff>{0}</color>车", App.Instance.Data.Set.Total, App.Instance.Data.Set.Total - App.Instance.Data.LocalCount);
-        Data_GoodsChangeEvent();
         width = Screen.width;
         height = Screen.height;
         CameraDevice.CameraSize = new Vector2(width, height);
+        Txt_NetWork_Position = Txt_NetWork.transform.position;
+        if (!PlayerPrefs.HasKey("jc_one_time"))
+        {
+            PlayerPrefs.SetString("jc_one_time", System.DateTime.MinValue.ToString("yyyy-MM-dd HH:mm:ss"));
+        }
+        //else
+        //{
+        //    Debug.Log("jc_one_time-->" + PlayerPrefs.GetString("jc_one_time"));
+        //}
+        if (!PlayerPrefs.HasKey("jc_two_time"))
+        {
+            PlayerPrefs.SetString("jc_two_time", System.DateTime.MinValue.ToString("yyyy-MM-dd HH:mm:ss"));
+        }
+        //else
+        //{
+        //    Debug.Log("jc_two_time-->" + PlayerPrefs.GetString("jc_two_time"));
+        //}
     }
     public override void UI_Start()
     {
@@ -83,47 +99,22 @@ public class UI_Camera : UI_Base
         {//计次
             Btn_JS.gameObject.SetActive(false);
             Txt_JS_Time.gameObject.SetActive(false);
+            Txt_NetWork.transform.position = Txt_Send_Js.transform.position;
             Txt_Send_Js.gameObject.SetActive(false);
         }
         else
         {//计时
+            Txt_NetWork.transform.position = Txt_NetWork_Position;
             Btn_JS.gameObject.SetActive(true);
             Txt_JS_Time.gameObject.SetActive(true);
             Txt_Send_Js.gameObject.SetActive(true);
-
-            if (App.Instance.Data.CurrentData.Records_JS.Count > 0)
-            {
-                last_record_js = App.Instance.Data.CurrentData.Records_JS.Values.Last();
-                Js_Begin = last_record_js.State != 1;
-                last_record_js.BeginTime_T = System.Convert.ToDateTime(last_record_js.Data.BeginTime);
-                last_record_js.StartTime_T = last_record_js.BeginTime_T;
-                last_record_js.time = Time.time;
-
-                //========判断是否超时=====超时设置为结束
-                ts = System.DateTime.Now - last_record_js.BeginTime_T;
-                if (ts.TotalSeconds >= App.Instance.Data.Set.JSCD + last_record_js.AddTime)
-                {
-                    Js_Begin = false;
-                    App.Instance.Data.CurrentData.JsOver(last_record_js);
-                }
-
-                if (Js_Begin)
-                {
-                    Txt_Js_Btn.text = "结 束";
-                }
-                else
-                {
-                    Txt_Js_Btn.text = "开 始";
-                }
-            }
-            else
-            {
-                Txt_Js_Btn.text = "开 始";
-            }
+            //判断计时是否结束
+            CheckJsOver();
         }
         Data_ValueChange();
         Data_GoodsChangeEvent();
         Data_VolumChangeEvent();
+        Data_PlaceChangeEvent();
     }
     public override void UI_End()
     {
@@ -135,7 +126,31 @@ public class UI_Camera : UI_Base
         //App.Instance.DataServer.RunStrsChangeEvent -= DataServer_RunStrsChangeEvent;
         //cameraTexture.Stop();
     }
+    public void CheckJsOver()
+    {
+        if (App.Instance.Data.CurrentData.Records_JS.Count > 0)
+        {
+            last_record_js = App.Instance.Data.CurrentData.Records_JS.Values.Last();
+            Js_Begin = last_record_js.State == 0;
+            last_record_js.BeginTime_T = System.Convert.ToDateTime(last_record_js.Data.BeginTime);
+            last_record_js.StartTime_T = last_record_js.BeginTime_T;
+            last_record_js.time = Time.time;
 
+            if (Js_Begin)
+            {
+                Btn_Capture.gameObject.SetActive(false);
+                Txt_Js_Btn.text = "结 束";
+            }
+            else
+            {
+                Txt_Js_Btn.text = "开 始";
+            }
+        }
+        else
+        {
+            Txt_Js_Btn.text = "开 始";
+        }
+    }
     #region 抓拍
     private void Btn_Capture_Click()
     {
@@ -148,6 +163,9 @@ public class UI_Camera : UI_Base
             jc_two();
         }
     }
+    /// <summary>
+    /// 一次计次
+    /// </summary>
     public void jc_one()
     {
         if (isPlay)
@@ -157,9 +175,10 @@ public class UI_Camera : UI_Base
                 TipsManager.Instance.Error("请先设置基础信息");
                 return;
             }
-            if (Time.time - PlayStartTime < App.Instance.Data.Set.CD1)
+            System.TimeSpan ts =System.DateTime.Now- System.Convert.ToDateTime(PlayerPrefs.GetString("jc_one_time"));
+            if (ts.TotalSeconds < App.Instance.Data.Set.CD1)
             {
-                float k = App.Instance.Data.Set.CD1 - Time.time + PlayStartTime;
+                float k = App.Instance.Data.Set.CD1 - (float)ts.TotalSeconds;
                 TipsManager.Instance.Error(string.Format("{0}秒后才能再次抓拍", k.ToString("0.0")));
                 return;
             }
@@ -188,18 +207,7 @@ public class UI_Camera : UI_Base
             wj_photo.Data.AtTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
             #region 保存图片
             //图片翻转180度
-            snap = GetTexture();// new Texture2D(width, height);
-            //Color[] cSource = GetTexture().GetPixels();// cameraTexture.GetPixels();
-            //cRes = new Color[cSource.Length];
-            //for (int x = 0; x < width; x++)
-            //{
-            //    for (int y = 0; y < height; y++)
-            //    {
-            //        cRes[((width - x - 1) * height) + height - y - 1] = cSource[(x * height) + y];
-            //    }
-            //}
-            //snap.SetPixels(cRes);
-            //snap.Apply(false);
+            snap = GetTexture();
             //===生成大图
             byte[] pngData = snap.EncodeToJPG(50);
             File.WriteAllBytes(App.Instance.Data.ImgPath + wj_photo.Data.PhotoPath, pngData);
@@ -209,8 +217,12 @@ public class UI_Camera : UI_Base
             File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
             #endregion
             //===修改xml
-            App.Instance.Data.Add(wj_photo, dt, has_goods? DL_Goods.options[DL_Goods.value].text:"",has_volum ? DL_Volum.options[DL_Volum.value].text : "0");
-            PlayStartTime = Time.time;
+            App.Instance.Data.Add(wj_photo, dt, 
+                has_goods? DL_Goods.options[DL_Goods.value].text:"",
+                has_volum ? DL_Volum.options[DL_Volum.value].text : "0",
+                has_place ? DL_Place.options[DL_Place.value].text : "空");
+            //PlayStartTime = Time.time;
+            PlayerPrefs.SetString("jc_one_time", dt.ToString("yyyy-MM-dd HH:mm:ss"));
             Txt_Total.text = App.Instance.Data.GetJcTotal().ToString();// App.Instance.Data.CurrentData.AllRecords.Count.ToString();
             Txt_Total.gameObject.SetActive(true);
             Img_Camera.gameObject.SetActive(false);
@@ -226,6 +238,9 @@ public class UI_Camera : UI_Base
         isPlay = true;
         App.Instance.EnAbleNetWork();
     }
+    /// <summary>
+    /// 两次计次
+    /// </summary>
     public void jc_two()
     {
         if (isPlay)
@@ -235,9 +250,10 @@ public class UI_Camera : UI_Base
                 TipsManager.Instance.Error("请先设置基础信息");
                 return;
             }
-            if (Time.time - PlayStartTime < App.Instance.Data.Set.CD)
+            System.TimeSpan ts = System.DateTime.Now - System.Convert.ToDateTime(PlayerPrefs.GetString("jc_two_time"));
+            if (ts.TotalSeconds < App.Instance.Data.Set.CD)
             {
-                float k = App.Instance.Data.Set.CD - Time.time + PlayStartTime;
+                float k = App.Instance.Data.Set.CD - (float)ts.TotalSeconds;
                 TipsManager.Instance.Error(string.Format("{0}秒后才能再次抓拍", k.ToString("0.0")));
                 return;
             }
@@ -267,18 +283,7 @@ public class UI_Camera : UI_Base
             wj_photo.Data.AtTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
             #region 保存图片
             //图片翻转180度
-            snap = GetTexture();// new Texture2D(width, height);
-            //Color[] cSource = GetTexture().GetPixels();// cameraTexture.GetPixels();
-            //cRes = new Color[cSource.Length];
-            //for (int x = 0; x < width; x++)
-            //{
-            //    for (int y = 0; y < height; y++)
-            //    {
-            //        cRes[((width - x - 1) * height) + height - y - 1] = cSource[(x * height) + y];
-            //    }
-            //}
-            //snap.SetPixels(cRes);
-            //snap.Apply(false);
+            snap = GetTexture();
             //===生成大图
             byte[] pngData = snap.EncodeToJPG(50);
             File.WriteAllBytes(App.Instance.Data.ImgPath + wj_photo.Data.PhotoPath, pngData);
@@ -288,17 +293,21 @@ public class UI_Camera : UI_Base
             File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
             #endregion
             //===修改xml
-            if (App.Instance.Data.Add(wj_photo, dt, has_goods ? DL_Goods.options[DL_Goods.value].text : "", has_volum ? DL_Volum.options[DL_Volum.value].text : "0"))
+            if (App.Instance.Data.Add(wj_photo, dt, 
+                has_goods ? DL_Goods.options[DL_Goods.value].text : "", 
+                has_volum ? DL_Volum.options[DL_Volum.value].text : "0",
+                has_place ? DL_Place.options[DL_Place.value].text : "空"))
             {//完成一车
-                PlayStartTime = Time.time + 1.1f - App.Instance.Data.Set.CD;//App.Instance.Data.Set.CD - Time.time + PlayStartTime=1
-                Txt_Total.text = App.Instance.Data.GetJcTotal().ToString();// App.Instance.Data.CurrentData.AllRecords.Count.ToString();
+                
+                PlayerPrefs.SetString("jc_two_time", System.DateTime.MinValue.ToString("yyyy-MM-dd HH:mm:ss"));
+                Txt_Total.text = App.Instance.Data.GetJcTotal().ToString();
                 Txt_Total.gameObject.SetActive(true);
                 Img_Camera.gameObject.SetActive(false);
                 Destroy(Img_Camera.texture);
             }
             else
             {//第一次抓拍
-                PlayStartTime = Time.time;
+                PlayerPrefs.SetString("jc_two_time", System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
                 Txt_Total.gameObject.SetActive(false);
                 Img_Camera.gameObject.SetActive(true);
                 Img_Camera.texture = snap;
@@ -313,18 +322,35 @@ public class UI_Camera : UI_Base
         isPlay = true;
         App.Instance.EnAbleNetWork();
     }
+    /// <summary>
+    /// 计时
+    /// </summary>
     public void Btn_Capture_Click2()
     {
-        if (isPlay)
+        if (!Js_Begin)
         {
-            if (string.IsNullOrEmpty(App.Instance.Data.Set.WJ_Code))
+            MessageBox.Instance.Run("是否开始？", Capture);
+        }
+        else
+        {
+            MessageBox.Instance.Run("是否结束？", Capture);
+        }
+    }
+    public void Capture(bool back)
+    {
+        if (back)
+        {
+            if (isPlay)
             {
-                TipsManager.Instance.Error("请先设置基础信息");
-                return;
+                if (string.IsNullOrEmpty(App.Instance.Data.Set.WJ_Code))
+                {
+                    TipsManager.Instance.Error("请先设置基础信息");
+                    return;
+                }
+                App.Instance.DisAbleNewWork();
+                Content.gameObject.SetActive(false);
+                StartCoroutine(Btn_Capture_Click2_Action());
             }
-            App.Instance.DisAbleNewWork();
-            Content.gameObject.SetActive(false);
-            StartCoroutine(Btn_Capture_Click2_Action());
         }
     }
     IEnumerator Btn_Capture_Click2_Action()
@@ -334,7 +360,7 @@ public class UI_Camera : UI_Base
         try
         {
             isPlay = false;
-            //新建一个model
+            ////新建一个model
             System.DateTime dt = System.DateTime.Now;
             WJ_Photo_Local wj_photo = new WJ_Photo_Local();
             wj_photo.Data = new google.protobuf.WJ_Photo();
@@ -347,17 +373,7 @@ public class UI_Camera : UI_Base
             wj_photo.Data.AtTime = dt.ToString("yyyy-MM-dd HH:mm:ss");
             #region 生成图片
             //图片翻转180度
-            snap = GetTexture();// new Texture2D(width, height);
-            //Color[] cSource = GetTexture().GetPixels(); //cameraTexture.GetPixels();
-            //for (int x = 0; x < width; x++)
-            //{
-            //    for (int y = 0; y < height; y++)
-            //    {
-            //        cRes[((width - x - 1) * height) + height - y - 1] = cSource[(x * height) + y];
-            //    }
-            //}
-            //snap.SetPixels(cRes);
-            //snap.Apply(false);
+            snap = GetTexture();
             //===生成大图
             byte[] pngData = snap.EncodeToJPG(50);
             File.WriteAllBytes(App.Instance.Data.ImgPath + wj_photo.Data.PhotoPath, pngData);
@@ -366,14 +382,18 @@ public class UI_Camera : UI_Base
             pngData = snap.EncodeToJPG(40);
             File.WriteAllBytes(App.Instance.Data.ImgMinPath + wj_photo.PhotoMiniPath, pngData);
             #endregion
-            //===修改xml
-            if (App.Instance.Data.Add_JS(wj_photo, dt, has_goods ? DL_Goods.options[DL_Goods.value].text : "", has_volum ? DL_Volum.options[DL_Volum.value].text : "0"))
+            //=== 修改xml
+            if (App.Instance.Data.Add_JS(dt, 
+                has_goods ? DL_Goods.options[DL_Goods.value].text : "", 
+                has_volum ? DL_Volum.options[DL_Volum.value].text : "0",wj_photo,
+                has_place ? DL_Place.options[DL_Place.value].text : "空"))
             {
                 Txt_JS_Time.text = "00:00:00";
                 Txt_Js_Btn.text = "结 束";
                 TipsManager.Instance.Info("开始计时");
                 Js_Begin = true;
                 last_record_js = App.Instance.Data.CurrentData.Records_JS.Values.Last();
+                Btn_Capture.gameObject.SetActive(false);
             }
             else
             {
@@ -381,6 +401,7 @@ public class UI_Camera : UI_Base
                 TipsManager.Instance.Info("结束计时");
                 Js_Begin = false;
                 last_record_js = null;
+                Btn_Capture.gameObject.SetActive(true);
 
             }
         }
@@ -391,20 +412,46 @@ public class UI_Camera : UI_Base
         Content.gameObject.SetActive(true);
         isPlay = true;
         App.Instance.EnAbleNetWork();
+        CaptureOver = true;
     }
+    public bool CaptureOver=false;
     #endregion
+
     #region 页面跳转
     public void Btn_Look_Click()
     {
         UI_Manager.Instance.Show("UI_History");
     }
+    /// <summary>
+    /// 退出程序
+    /// </summary>
     public void Btn_Close_Click()
+    {
+        MessageBox.Instance.Run("是否退出？", Close);
+    }
+    public bool NeedClose = false;
+    public void Close(bool back)
+    {
+        if (back)
+        {
+            if (Js_Begin)
+            {
+                NeedClose = true;
+                Capture(true);
+            }
+            else
+            {
+                RealOver();
+            }
+        }
+    }
+    public void RealOver()
     {
         if (Img_Camera.texture != null)
         {
             Destroy(Img_Camera.texture);
         }
-        UI_End();
+        
         Application.Quit();
     }
     public void Btn_Set_Click()
@@ -489,6 +536,35 @@ public class UI_Camera : UI_Base
             DL_Volum.captionText.text = "";
         }
     }
+    void Data_PlaceChangeEvent()
+    {
+        DL_Place.onValueChanged.RemoveAllListeners();
+        DL_Place.options.Clear();
+        if (App.Instance.Data.Place.Count > 0)
+        {
+            has_place = true;
+            string Place_save = UnityEngine.PlayerPrefs.GetString("place_set");
+            int Place_value = 0;
+            for (int i = 0; i < App.Instance.Data.Place.Count; i++)
+            {
+                Dropdown.OptionData od = new Dropdown.OptionData();
+                od.text = App.Instance.Data.Place[i];
+                if (od.text == Place_save)
+                {
+                    Place_value = i;
+                }
+                DL_Place.options.Add(od);
+            }
+            DL_Place.onValueChanged.AddListener(PlaceeSelect);
+            DL_Place.value = Place_value;
+            DL_Place.captionText.text = DL_Place.options[Place_value].text;
+        }
+        else
+        {
+            has_place = false;
+            DL_Place.captionText.text = "空";
+        }
+    }
     void Data_ValueChange()
     {
         int total_js,total_jc,local_js,local_jc, up_jc,up_js;
@@ -507,9 +583,25 @@ public class UI_Camera : UI_Base
     {
         PlayerPrefs.SetString("volum_set", DL_Volum.options[DL_Volum.value].text);
     }
+    private void PlaceeSelect(int value)
+    {
+        PlayerPrefs.SetString("place_set", DL_Place.options[DL_Place.value].text);
+    }
     #endregion
+
     void Update()
     {
+        if (CaptureOver)
+        {
+            CaptureOver = false;
+            if (NeedClose)
+            {
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#endif
+                RealOver();
+            }
+        }
         if (App.Instance.DataServer.State == ClientStat.ConnFail)
         {
             if (Application.internetReachability == NetworkReachability.NotReachable)
@@ -529,34 +621,33 @@ public class UI_Camera : UI_Base
             if (Js_Begin)
             {
                 ts = System.DateTime.Now - last_record_js.BeginTime_T;
-                if (ts.TotalSeconds >= App.Instance.Data.Set.JSCD+ last_record_js.AddTime)
-                {//自动结束
-                    Btn_Capture_Click2();
-                }
-                else
+                //if (ts.TotalSeconds >= App.Instance.Data.Set.JSCD+ last_record_js.AddTime)
+                //{//自动结束
+                //    Btn_Capture_Click2();
+                //}
+                //else
+                //{
+                if (Time.time - last_record_js.time >= 1)
                 {
-                    if (Time.time- last_record_js.time>=1)
-                    {
-                        last_record_js.time = Time.time;
-                        Txt_JS_Time.text = string.Format("{0}:{1}:{2}",
-                            ts.Hours.ToString("00"), ts.Minutes.ToString("00"), ts.Seconds.ToString("00"));
-                    }
-                    ts = System.DateTime.Now - last_record_js.StartTime_T;
-                    if(ts.TotalMinutes>=1)
-                    {//每隔5分钟保存一次
-                       last_record_js.StartTime_T = System.DateTime.Now;
-                       App.Instance.Data.SaveJs();
-                    }
+                    last_record_js.time = Time.time;
+                    Txt_JS_Time.text = string.Format("{0}:{1}:{2}",
+                        ts.Hours.ToString("00"), ts.Minutes.ToString("00"), ts.Seconds.ToString("00"));
                 }
+                ts = System.DateTime.Now - last_record_js.StartTime_T;
+                if (ts.TotalMinutes >= 5 && ts.Seconds == 0)
+                {//每隔5分钟保存一次
+                    last_record_js.StartTime_T = System.DateTime.Now;
+                    App.Instance.Data.SaveJs();
+                }
+                //}
             }
         }
         //=======日期=======
         ts2 = System.DateTime.Now - time_old;
-        if(ts2.TotalSeconds>=1)
+        if (ts2.TotalSeconds >= 1)
         {
             Txt_NowTime.text = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
         }
-
     }
 
     private float ConnFailStartTime = -100;

@@ -48,7 +48,7 @@ public class UI_History : UI_Base
             {
                 data_row.Add("PhotoMiniPathBegin", App.Instance.Data.ImgMinPath + xd.Photos[model.BgeinPhotoID].PhotoMiniPath);
             }
-            if (!string.IsNullOrEmpty(model.EndPhotoID))
+            if (!string.IsNullOrEmpty(model.EndPhotoID)&& model.EndPhotoID!="over")
             {
                 data_row.Add("PhotoMiniPathEnd", App.Instance.Data.ImgMinPath + xd.Photos[model.EndPhotoID].PhotoMiniPath);
             }

@@ -8,8 +8,11 @@ using System.Text.RegularExpressions;
 /// </summary>
 public class UI_Set : UI_Base
 {
-    public Button Btn_OK, Btn_Back, Btn_Login,Btn_Goods_Add, Btn_Volum_Add;
-    public InputField Input_Login_Pwd, Input_WJ_Code, Input_Place, Input_Data_Server, Input_Data_Port, Input_CustomerID, Input_Password, Input_Password_Local, Input_CD, Input_CD1, Input_JSCD, Input_Day;
+    public Button Btn_OK, Btn_Back, Btn_Login,Btn_Goods_Add, Btn_Volum_Add, Btn_Place_Add;
+    public InputField Input_Login_Pwd, Input_WJ_Code,
+        Input_Data_Server, Input_Data_Port,
+        Input_CustomerID, Input_Password, Input_Password_Local,
+        Input_CD, Input_CD1, Input_Day;
     public Toggle Tog_JC, Tog_JCJS, Tog_JC_One, Tog_JC_Two;
     private WJ_Set Set;
     public GameObject Content_Login, Content_Set;
@@ -20,8 +23,10 @@ public class UI_Set : UI_Base
         Btn_Login.onClick.AddListener(Btn_Set_Login);
         Btn_Goods_Add.onClick.AddListener(AddGoods);
         Btn_Volum_Add.onClick.AddListener(AddVolume);
+        Btn_Place_Add.onClick.AddListener(Addplace);
         table_goods.RowDeleteEvent += Table_goods_RowDeleteEvent;
         table_Volume.RowDeleteEvent += Table_Volume_RowDeleteEvent;
+        table_place.RowDeleteEvent += Table_place_RowDeleteEvent;
         InitTab();
     }
 
@@ -42,7 +47,6 @@ public class UI_Set : UI_Base
             Btn_OK.gameObject.SetActive(false);
         }
         Input_WJ_Code.text = Set.WJ_Code;
-        Input_Place.text = Set.Place;
         Input_Data_Server.text = Set.DataServer;
         Input_Data_Port.text = Set.DataPort.ToString();
         if (Set.CustomerID != -1)
@@ -51,7 +55,7 @@ public class UI_Set : UI_Base
         }
         Input_Password.text = Set.Password;
         Input_CD.text = Set.CD.ToString();
-        Input_JSCD.text = (Set.JSCD / 60.0f).ToString();
+        //Input_JSCD.text = (Set.JSCD / 60.0f).ToString();
         Input_Day.text = Set.Day.ToString();
         Input_CD1.text = Set.CD1.ToString();
         Input_Password_Local.text = Set.Password_Local;
@@ -79,11 +83,13 @@ public class UI_Set : UI_Base
         }
         ShowGoods();
         ShowVolume();
+        Showplace();
     }
     private void Btn_Set_Login()
     {
         if (string.Equals(Input_Login_Pwd.text, App.Instance.Data.Set.Password_Local))
         {
+            Btn_OK.gameObject.SetActive(true);
             Content_Login.gameObject.SetActive(false);
             Content_Set.gameObject.SetActive(true);
         }
@@ -95,10 +101,10 @@ public class UI_Set : UI_Base
     private void Btn_OK_Click()
     {
         bool relogin = false;
-        string WJ_Code, Place, DataServer, DataPort, CustomerIDStr, Password, CDStr, CD1Str, CDJSStr, DayStr, Password_Local;
+        string WJ_Code, DataServer, DataPort, CustomerIDStr, Password, CDStr, CD1Str, DayStr, Password_Local;
         int data_port, Day;
         long CustomerID;
-        float CD, CD1, CDJS;
+        float CD, CD1;
 
         CDStr = Input_CD.text.Trim();
         if (string.IsNullOrEmpty(CDStr))
@@ -120,17 +126,6 @@ public class UI_Set : UI_Base
         if (!float.TryParse(CD1Str, out CD1))
         {
             TipsManager.Instance.Error("一次次计次间隔填写错误！");
-            return;
-        }
-        CDJSStr = Input_JSCD.text.Trim();
-        if (string.IsNullOrEmpty(CDJSStr))
-        {
-            TipsManager.Instance.Error("计时自动结束为空！");
-            return;
-        }
-        if (!float.TryParse(CDJSStr, out CDJS))
-        {
-            TipsManager.Instance.Error("计时自动结束填写错误！");
             return;
         }
 
@@ -160,19 +155,19 @@ public class UI_Set : UI_Base
         }
         #endregion
 
-        #region 挖机编号和作业地点
+        #region 挖机编号
         WJ_Code = Input_WJ_Code.text.Trim();
         if (string.IsNullOrEmpty(WJ_Code))
         {
             TipsManager.Instance.Error("挖机编号为空！");
             return;
         }
-        Place = Input_Place.text.Trim();
-        if (string.IsNullOrEmpty(Place))
-        {
-            TipsManager.Instance.Error("作业地点为空！");
-            return;
-        }
+        //Place = Input_Place.text.Trim();
+        //if (string.IsNullOrEmpty(Place))
+        //{
+        //    TipsManager.Instance.Error("作业地点为空！");
+        //    return;
+        //}
         #endregion
 
         #region 服务器
@@ -215,9 +210,7 @@ public class UI_Set : UI_Base
         #endregion
 
         Set.CD = CD;
-        Set.JSCD = CDJS * 60;
         Set.WJ_Code = WJ_Code;
-        Set.Place = Place;
 
         Set.DataServer = DataServer;
         Set.DataPort = DataPort;
@@ -252,8 +245,8 @@ public class UI_Set : UI_Base
     }
 
     //==============
-    public Toggle Tog_UserInfo, Top_Work, Tog_Server, Top_Goods,Tog_Volum;
-    public GameObject Content_UserInfo, Content_Work, Content_Server, Content_Goods, Content_Volum, Content_Current;
+    public Toggle Tog_UserInfo, Top_Work, Tog_Server, Top_Goods,Tog_Volum, Tog_Place;
+    public GameObject Content_UserInfo, Content_Work, Content_Server, Content_Goods, Content_Volum, Content_Place, Content_Current;
     public void InitTab()
     {
         Tog_UserInfo.onValueChanged.AddListener(ShowUserInfo);
@@ -261,6 +254,7 @@ public class UI_Set : UI_Base
         Tog_Server.onValueChanged.AddListener(ShowServer);
         Top_Goods.onValueChanged.AddListener(ShowGoods);
         Tog_Volum.onValueChanged.AddListener(ShowVolum);
+        Tog_Place.onValueChanged.AddListener(ShowPlace);
     }
     public void ShowUserInfo(bool _select)
     {
@@ -306,6 +300,15 @@ public class UI_Set : UI_Base
         }
         Content_Volum.SetActive(true);
         Content_Current = Content_Volum;
+    }
+    public void ShowPlace(bool _select)
+    {
+        if (Content_Current != null)
+        {
+            Content_Current.SetActive(false);
+        }
+        Content_Place.SetActive(true);
+        Content_Current = Content_Place;
     }
     //=====物料=====
     public UI_Control_Table table_goods;
@@ -362,6 +365,12 @@ public class UI_Set : UI_Base
             TipsManager.Instance.Error("方量为空！");
             return;
         }
+        float k = 0;
+        if(!float.TryParse(str,out k))
+        {
+            TipsManager.Instance.Error("方量必须是数字类型！");
+            return;
+        }
         App.Instance.Data.AddVolume(str, str);
         Dictionary<string, string> data_row = new Dictionary<string, string>();
         data_row.Add("id", str);
@@ -372,5 +381,36 @@ public class UI_Set : UI_Base
     {
         App.Instance.Data.RemoveVolume(row.datas["id"]);
         table_Volume.RemoveRow(row);
+    }
+    //=====物料=====
+    public UI_Control_Table table_place;
+    public InputField input_place;
+    private void Showplace()
+    {
+        table_place.Clear();
+        for (int i = 0; i < App.Instance.Data.Place.Count; i++)
+        {
+            Dictionary<string, string> data_row = new Dictionary<string, string>();
+            data_row.Add("value", App.Instance.Data.Place[i]);
+            table_place.AddRow(data_row, null);
+        }
+    }
+    private void Addplace()
+    {
+        string str = input_place.text;
+        if (string.IsNullOrEmpty(str))
+        {
+            TipsManager.Instance.Error("物料类型为空！");
+            return;
+        }
+        App.Instance.Data.AddPlace(str);
+        Dictionary<string, string> data_row = new Dictionary<string, string>();
+        data_row.Add("value", str);
+        table_place.AddRow(data_row, null);
+    }
+    private void Table_place_RowDeleteEvent(UI_Control_Table_Row row)
+    {
+        App.Instance.Data.RemovePlace(row.datas["value"]);
+        table_place.RemoveRow(row);
     }
 }
