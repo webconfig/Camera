@@ -31,4 +31,24 @@ internal class ClientManager
         Debug.Info("【ClientManager】--删除退出的客户端");
         Clients.TryTake(out item);
     }
+    public void EndClient(long CustomerID,string Password,string code)
+    {
+        List<Client> end_items = new List<Client>();
+        foreach (var item in Clients)
+        {
+            if (item.CustomerID == CustomerID && item.pwd == Password && item.code == code)
+            {
+                end_items.Add(item);
+            }
+        }
+        if(end_items.Count>0)
+        {
+            for (int i = 0; i < end_items.Count; i++)
+            {
+                Debug.Info("【ClientManager】--删除以前的客户端--"+ end_items[i].CustomerID);
+                end_items[i].close();
+            }
+        }
+        end_items.Clear();
+    }
 }

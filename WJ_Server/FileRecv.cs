@@ -4,12 +4,21 @@ using System.Net.Sockets;
 using Dos.ORM;
 using System;
 using Dos.Model;
-
+using System.Collections.Generic;
 public class FileRecv
 {
     public string FilePath = @"D:\FtpDir";
     public System.IO.FileStream fs;
+    public string localpath;
+    public Client client;
     public bool StartWrite = false;
+    public static object all_files_obj;
+    public static Dictionary<string, Client> all_files = new Dictionary<string, Client>();
+
+    public FileRecv(Client _client)
+    {
+        client = _client;
+    }
 
     public void Action(int tp, byte[] data, NetworkStream _stream)
     {
@@ -20,8 +29,20 @@ public class FileRecv
                 NetHelp.RecvData<FileStartRequest>(data, out request_file);
 
                 //判断文件夹是否存在
-                string localpath = string.Format(@"{0}\{1}\{2}\{3}\", FilePath,
-                    request_file.CustomerID.ToString(), request_file.AtTime,request_file.WJID); 
+                localpath = string.Format(@"{0}\{1}\{2}\{3}\", FilePath,
+                   request_file.CustomerID.ToString(), request_file.AtTime, request_file.WJID);
+                lock (all_files_obj)
+                {
+                    if (all_files.ContainsKey(localpath))
+                    {
+                        all_files[localpath].close();
+                        all_files.Remove(localpath);
+                    }
+                    else
+                    {
+                        all_files.Add(localpath, client);
+                    }
+                }
                 if (!System.IO.Directory.Exists(localpath))
                 {
                     System.IO.Directory.CreateDirectory(localpath);
@@ -61,6 +82,16 @@ public class FileRecv
                     Debug.Info("传输完成：" + fs.Name);
                     fs = null;
                 }
+
+                lock (all_files_obj)
+                {
+                    if (all_files.ContainsKey(localpath))
+                    {
+                        all_files.Remove(localpath);
+                    }
+                }
+                localpath = string.Empty;
+
                 //=====写入数据库=====
                 var where = new Where<Dos.Model.WJ_Photo>();
                 where.And(d => d.CustomerID.Equals(request_over.CustomerID));
@@ -103,7 +134,18 @@ public class FileRecv
 
     public void Exit()
     {
-        if(fs!=null)
+        if (string.IsNullOrEmpty(localpath))
+        {
+            lock (all_files_obj)
+            {
+                if (all_files.ContainsKey(localpath))
+                {
+                    all_files.Remove(localpath);
+                }
+            }
+            localpath = string.Empty;
+        }
+        if (fs!=null)
         {
             fs.Close();
         }

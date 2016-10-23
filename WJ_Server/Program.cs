@@ -6,7 +6,7 @@ namespace WJ_Server
 {
     public class Program
     {
-        public static Wj_Code Current;
+        //public static Wj_Code Current;
         static void Main()
         {
             Console.Title = "WJ Server";
@@ -17,7 +17,7 @@ namespace WJ_Server
             try
             {
                 Db.Context = new DbSession(DatabaseType.SqlServer, "data source=.;initial catalog=RS_PIS;user id=wj;pwd=Mc111111");
-                Current = Db.Context.From<Wj_Code>().First();
+                //Current = Db.Context.From<Wj_Code>().First();
             }
             catch
             {

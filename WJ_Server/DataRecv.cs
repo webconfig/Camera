@@ -23,18 +23,11 @@ public class DataRecv
                 model = Db.Context.From<WJ_Customer>().Where(where).First();
                 if (model != null && string.Equals(request_login.Password, model.Password))
                 {
-                    if (request_login.CheckCode)
-                    {
-                        response_login.Result = WJ_Server.Program.Current.Code;
-                        response_login.Url = WJ_Server.Program.Current.Url;
-                    }
-                    else
-                    {
-                        response_login.Result = "1";
-                    }
+                    response_login.Result = "1";
+                    ClientManager.GetInstance().EndClient(request_login.CustomerID, request_login.Password, request_login.Code);
                     client.CustomerID = request_login.CustomerID;
                     client.pwd = request_login.Password;
-                    //ClientManager.GetInstance().EndClient(request_login.CustomerID, request_login.Password,client.Ticks);
+                    client.code = request_login.Code;
                     Debug.Info("登录成功");
                 }
                 else
@@ -109,7 +102,7 @@ public class DataRecv
                     longitude = request_record.longitude,
                     Latitude = request_record.Latitude,
                     Mode = request_record.Mode,
-                    Volume= request_record.Volum>0? Convert.ToDecimal(request_record.Volum):0,
+                    Volume = request_record.Volum > 0 ? Convert.ToDecimal(request_record.Volum) : 0,
                     State = state
                 };
                 Db.Context.Insert<WJ_Record_Submit>(record_submit);

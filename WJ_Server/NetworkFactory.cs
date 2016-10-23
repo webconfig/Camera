@@ -2,11 +2,10 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-
+using System.Collections.Generic;
 internal class NetworkFactory
 {
     private static NetworkFactory Instance;
-
     private static TcpListener NetworkListener;
 
     public NetworkFactory()

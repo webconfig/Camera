@@ -8,6 +8,7 @@ public class Client
 {
     public long CustomerID = -199;
     public long Ticks = -1;
+    public string code= "&*%";
     public string pwd = "&*%";
     public TcpClient _client;
     public IPEndPoint ip;
@@ -28,7 +29,7 @@ public class Client
         AllDatas = new List<byte>();
         recieveData = new byte[ReceiveBufferSize];
         DataServer = new DataRecv();
-        FileServer = new FileRecv();
+        FileServer = new FileRecv(this);
         StartTime = System.DateTime.Now;
         Ticks = StartTime.Ticks;
         BeginRead();
@@ -98,11 +99,29 @@ public class Client
                         AllDatas.RemoveRange(0, len);
                         if (command < 10)
                         {//传输数据
-                            DataServer.Action(command, msgBytes, this);
+                            try
+                            {
+                                DataServer.Action(command, msgBytes, this);
+                            }
+                            catch(Exception ex)
+                            {
+                                Debug.Error("重大bug--->:" + ex.ToString());
+                                close();
+                                return;
+                            }
                         }
                         else if (command < 20)
                         {//传输图片
-                            FileServer.Action(command, msgBytes, _stream);
+                            try
+                            {
+                                FileServer.Action(command, msgBytes, _stream);
+                            }
+                            catch(Exception ex)
+                            {
+                                Debug.Error("重大bug--->:" + ex.ToString());
+                                close();
+                                return;
+                            }
                         }
                     }
                     else
