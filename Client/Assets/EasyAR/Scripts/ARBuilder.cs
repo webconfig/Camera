@@ -82,7 +82,7 @@ namespace EasyAR
             foreach (var behaviour in GameObject.FindObjectsOfType<DeviceUserAbstractBehaviour>())
             {
                 behaviour.Bind(cambehaviour);
-                Debug.Log("ARBuilder: " + behaviour + " bind " + cambehaviour);
+                //Debug.Log("ARBuilder: " + behaviour + " bind " + cambehaviour);
             }
             foreach (var behaviour in AugmenterBehaviours)
             {
