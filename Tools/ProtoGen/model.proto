@@ -5,6 +5,7 @@ message LoginRequest {
   required int64 CustomerID = 1;
   required string Password = 2;
   required bool CheckCode = 3;
+  optional string Code=4;
 }
 message LoginResponse {
   required string Result = 1;
