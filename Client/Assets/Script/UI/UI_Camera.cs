@@ -47,6 +47,7 @@ public class UI_Camera : UI_Base
         //{
         //    Debug.Log("jc_two_time-->" + PlayerPrefs.GetString("jc_two_time"));
         //}
+
     }
     public override void UI_Start()
     {

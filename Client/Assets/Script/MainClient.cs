@@ -37,7 +37,9 @@ public class MainClient
         client = new TcpClient();
         try
         {
+#if UNITY_EDITOR
             Debug.Log("==连接:" + App.Instance.Data.Set.DataServer + ":" + App.Instance.Data.Set.DataPort);
+#endif
             client.Connect(App.Instance.Data.Set.DataServer, int.Parse(App.Instance.Data.Set.DataPort));
             State = ClientStat.Conn;
         }
@@ -65,7 +67,9 @@ public class MainClient
         }
         catch
         {
+#if UNITY_EDITOR
             Debug.Log("连接服务器失败");
+#endif
         }
         yield return null;
     }
@@ -76,7 +80,7 @@ public class MainClient
     {
         if (App.Instance.Data.Set.CustomerID==0||string.IsNullOrEmpty(App.Instance.Data.Set.Password))
         {//没有用户名和密码不用登录
-            Debug.Log("==没有用户名和密码不用登录==");
+            //Debug.Log("==没有用户名和密码不用登录==");
             TipsManager.Instance.Error("请先设置用户名和密码");
             State = ClientStat.LoginFail;
             return;
@@ -85,7 +89,10 @@ public class MainClient
         LoginModel.CustomerID = App.Instance.Data.Set.CustomerID;
         LoginModel.Password = App.Instance.Data.Set.Password;
         LoginModel.CheckCode = App.Instance.Data.Set.CheckCode;
+        LoginModel.Code = App.Instance.Data.Set.WJ_Code;
+#if UNITY_EDITOR
         Debug.Log("========登录：" + LoginModel.CustomerID + "-" + LoginModel.Password);
+#endif
         State = ClientStat.Logining;
         LoginStartTime = Time.time;
         Send<LoginRequest>(1, LoginModel);
@@ -95,15 +102,26 @@ public class MainClient
     /// </summary>
     public void ReLogin()
     {
-        State = ClientStat.ReLogin;
-        ReLoginStartTime = Time.time;
+        if (State == ClientStat.LoginFail)
+        {
+            ConnStartTime = -100;
+            State = ClientStat.ConnFail;
+        }
+        else
+        {
+            State = ClientStat.ReLogin;
+            ReLoginStartTime = Time.time;
+        }
     }
     /// <summary>
     /// 重新连接
     /// </summary>
     public void GotoConnFail()
     {
-        State = ClientStat.ConnFailStart;
+        if (State != ClientStat.LoginFail)
+        {
+            State = ClientStat.ConnFailStart;
+        }
     }
     #endregion
     /// <summary>
@@ -266,7 +284,10 @@ public class MainClient
                                 try
                                 {
                                     RecvData<GoodsResponse>(msgBytes, out GoodsResponseModel);
+
+#if UNITY_EDITOR
                                     Debug.Log("===Goods返回结果:" + GoodsResponseModel.result.Count);
+#endif
                                     App.Instance.Data.AddGoods(GoodsResponseModel);
                                 }
                                 catch { }
@@ -280,10 +301,15 @@ public class MainClient
                             RecvData<RecordResponse>(msgBytes, out RecordResponseModel);
                             if (RecordResponseModel.record_id == -1)
                             {
+#if UNITY_EDITOR
                                 Debug.Log("传输一个Record发生错误");
+#endif
                             }
                             else
                             {
+#if UNITY_EDITOR
+                                Debug.Log("完成Record："+ RecordResponseModel.record_id);
+#endif
                                 App.Instance.Data.AddSubmitRespinse(RecordResponseModel);
                             }
                         }
@@ -324,43 +350,58 @@ public class MainClient
     }
     #endregion
 
+    public void EndClient()
+    {
+        if (NetStream != null)
+        {
+            NetStream.Close();
+            NetStream = null;
+        }
+        if (client != null)
+        {
+            client.Close();
+            client = null;
+        }
+    }
+
     public void DealSend(bool NotSend)
     {
         if(State== ClientStat.NoNetWorkStart)
         {
+            #region 没有网络
             if (RttChangeEvent != null)
             {
                 RttChangeEvent("网络：<color=#FF0000FF>没有网络</color>");
             }
             State = ClientStat.NoNetWork;
+            #endregion
         }
         else if(State== ClientStat.NoNetWork)
         {
+            #region 没有网络后重新有网络
             if (Application.internetReachability != NetworkReachability.NotReachable)
             {
                 State = ClientStat.ConnFailStart;
                 return;
             }
+            #endregion
         }
         else if (State== ClientStat.ConnFailStart)
         {
-            if (NetStream != null)
+            #region 断开连接
+            if (RttChangeEvent != null)
             {
-                NetStream.Close();
-                NetStream = null;
+                RttChangeEvent("网络：<color=#00ff00ff>断开</color>");
             }
-            if (client != null)
-            {
-                client.Close();
-                client = null;
-            }
+            EndClient();
             ConnStartTime = Time.time;
             State = ClientStat.ConnFail;
+            #endregion
         }
         else if (State == ClientStat.ConnFail)
-        {//连接失败
+        {
             if (NotSend) { return; }
-            #region ConnFail
+            #region 连接失败
             if (Application.internetReachability == NetworkReachability.NotReachable)
             {
                 State = ClientStat.NoNetWorkStart;
@@ -390,7 +431,9 @@ public class MainClient
                 NetStream = client.GetStream();
                 State = ClientStat.Conn;
                 BeginRead();
+#if UNITY_EDITOR
                 Debug.Log("连接到服务器");
+#endif
                 RequestLogin();//请求登录
                 #endregion
             }
@@ -405,17 +448,9 @@ public class MainClient
             }
             else if (State == ClientStat.LoginBack)
             {//登陆返回结果
-                #region 完成登录
                 if (LoginResult.Result != "0")
                 {//成功
-                    if (App.Instance.Data.Set.CheckCode)
-                    {
-                        if (App.Instance.Data.Code != LoginResult.Result)
-                        {
-                            //UnityEngine.Analytics.TrackEvent("Click URL Website", "app/help/website");
-                            Application.OpenURL("http://" + LoginResult.Url);
-                        }
-                    }
+                    #region 登录成功
                     if (ShowLoginOkTip)
                     {
                         ShowLoginOkTip = false;
@@ -431,13 +466,20 @@ public class MainClient
                     {
                         GotoSend();
                     }
+                    #endregion
                 }
                 else
                 {
-                    TipsManager.Instance.Error("用户ID或者用户密码错误");
+                    #region 登录失败
                     State = ClientStat.LoginFail;
+                    EndClient();
+                    TipsManager.Instance.Error("用户ID或者用户密码错误");
+                    if (RttChangeEvent != null)
+                    {
+                        RttChangeEvent("网络：<color=#00ff00ff>断开</color>");
+                    }
+                    #endregion
                 }
-                #endregion
             }
             else if (State == ClientStat.ReLogin)
             {//重新登录
@@ -469,7 +511,9 @@ public class MainClient
                     #region 发送历史数据
                     if (App.Instance.Data.OldDatas[0].Records_Submit.Count > 0)
                     {
+#if UNITY_EDITOR
                         Debug.Log("发送历史数据记录1条");
+#endif
                         State = ClientStat.Sending;
                         SendStartTime = Time.time;
                         Send<WJ_Record>(4, App.Instance.Data.OldDatas[0].Records_Submit.Values.First().Data);
@@ -494,7 +538,9 @@ public class MainClient
                     #region 发送当天数据
                     if (App.Instance.Data.CurrentData.Records_Submit.Count > 0)
                     {
+#if UNITY_EDITOR
                         Debug.Log("发送当天数据记录1条");
+#endif
                         State = ClientStat.Sending;
                         SendStartTime = Time.time;
                         Send<WJ_Record>(4, App.Instance.Data.CurrentData.Records_Submit.Values.First().Data);
@@ -515,14 +561,17 @@ public class MainClient
                 }
             }
             else if (State == ClientStat.SendFile)
-            {//发送文件
-                #region SendFile
+            {
+                #region 发送文件
                 switch (SendFileState)
                 {
                     case 1:
                         if (Time.time - SendFileStartTime >= SendFileTimeOut)
                         {//超时
+
+#if UNITY_EDITOR
                             Debug.Log("开始发送文件超时");
+#endif
                             CloseFile();
                             GotoConnFail();
                         }
@@ -554,7 +603,9 @@ public class MainClient
                         break;
                     case 4:
                         SendFileState = 0;
+#if UNITY_EDITOR
                         Debug.Log("完成文件：" + CurrentFile.Data.PhotoPath);
+#endif
                         CloseFile();//关闭文件
                         App.Instance.Data.PhotoSubmitOver(CurrentFile);//更新xml信息
                         GotoSend();//发送完成，去发送数据
@@ -574,8 +625,6 @@ public class MainClient
             }
         }
     }
-
-
     private void StartSendFile()
     {
         State = ClientStat.SendFile;
@@ -587,7 +636,9 @@ public class MainClient
         request.WJID = CurrentFile.Data.WJID;
         request.AtTime = Convert.ToDateTime(CurrentFile.Data.AtTime).ToString("yyyy-MM-dd");
         Send<FileStartRequest>(11, request);
+#if UNITY_EDITOR
         Debug.Log("开始发送文件：" + CurrentFile.Data.PhotoPath);
+#endif
     }
 
     #region 退出

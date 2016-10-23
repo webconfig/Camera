@@ -36,6 +36,14 @@ namespace google.protobuf
       get { return _CheckCode; }
       set { _CheckCode = value; }
     }
+    private string _Code = "";
+    [global::ProtoBuf.ProtoMember(4, IsRequired = false, Name=@"Code", DataFormat = global::ProtoBuf.DataFormat.Default)]
+    [global::System.ComponentModel.DefaultValue("")]
+    public string Code
+    {
+      get { return _Code; }
+      set { _Code = value; }
+    }
     private global::ProtoBuf.IExtension extensionObject;
     global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
       { return global::ProtoBuf.Extensible.GetExtensionObject(ref extensionObject, createIfMissing); }
