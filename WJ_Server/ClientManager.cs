@@ -4,7 +4,8 @@ using System;
 internal class ClientManager
 {
     private static ClientManager Instance = new ClientManager();
-    public System.Collections.Concurrent.ConcurrentBag<Client> Clients = new System.Collections.Concurrent.ConcurrentBag<Client>();
+    public List<Client> Clients = new List<Client>();
+    public object clients_obj = new object();
     static ClientManager()
     {
     }
@@ -23,32 +24,39 @@ internal class ClientManager
 
         Client client = new Client(tcp);
         Debug.Info("【ClientManager】--添加客户端:" + client.ip.Address.ToString() + ":" + client.ip.Port.ToString());
-        Clients.Add(client);
+        lock (clients_obj)
+        {
+            Clients.Add(client);
+        }
     }
 
     public void RemoveClient(Client item)
     {
-        Debug.Info("【ClientManager】--删除退出的客户端");
-        Clients.TryTake(out item);
+        Debug.Info(string.Format("[客户端id：{0},挖机号{1}]-->【ClientManager】--删除退出的客户端", item.CustomerID, item.code));
+        lock (clients_obj)
+        {
+            if(Clients.Contains(item))
+            {
+                Clients.Remove(item);
+            }
+        }
     }
     public void EndClient(long CustomerID,string Password,string code)
     {
-        List<Client> end_items = new List<Client>();
-        foreach (var item in Clients)
+        lock (clients_obj)
         {
-            if (item.CustomerID == CustomerID && item.pwd == Password && item.code == code)
+            Client item;
+            for (int i = 0; i < Clients.Count; i++)
             {
-                end_items.Add(item);
+                item = Clients[i];
+                if(item.CustomerID == CustomerID && item.pwd == Password && item.code == code)
+                {
+                    Debug.Info(string.Format("[客户端id：{0},挖机号{1}]-->【ClientManager】--删除以前的客户端", item.CustomerID, item.code));
+                    item.close();
+                    Clients.RemoveAt(i);
+                    i--;
+                }
             }
         }
-        if(end_items.Count>0)
-        {
-            for (int i = 0; i < end_items.Count; i++)
-            {
-                Debug.Info("【ClientManager】--删除以前的客户端--"+ end_items[i].CustomerID);
-                end_items[i].close();
-            }
-        }
-        end_items.Clear();
     }
 }

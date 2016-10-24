@@ -12,7 +12,6 @@ public class DataRecv
         switch (tp)
         {
             case 1://登录
-                Debug.Info("登录");
                 LoginRequest request_login;
                 NetHelp.RecvData(data, out request_login);
                 LoginResponse response_login = new LoginResponse();
@@ -28,12 +27,12 @@ public class DataRecv
                     client.CustomerID = request_login.CustomerID;
                     client.pwd = request_login.Password;
                     client.code = request_login.Code;
-                    Debug.Info("登录成功");
+                    Debug.Info(string.Format("[客户端id：{0},挖机号{1}]-->登录成功", request_login.CustomerID, request_login.Code));
                 }
                 else
                 {
                     response_login.Result = "0";
-                    Debug.Info("登录失败");
+                    Debug.Info(string.Format("[客户端id：{0},挖机号{1}]-->登录失败", request_login.CustomerID, request_login.Code));
                 }
                 //====== 测试 ========================
                 //response_login.Result = "1.0";
@@ -71,7 +70,7 @@ public class DataRecv
             case 4:
                 google.protobuf.WJ_Record request_record;
                 NetHelp.RecvData<google.protobuf.WJ_Record>(data, out request_record);
-                Debug.Info("上传Record==:" + request_record.ID);
+                Debug.Info(string.Format("[客户端id：{0},挖机号{1}]-->上传Record:{2}", client.CustomerID, client.code, request_record.ID));
                 RecordResponse response_record = new RecordResponse();
 
                 System.DateTime? EndTime = null;
@@ -136,11 +135,11 @@ public class DataRecv
                     num = Db.Context.Insert<Dos.Model.WJ_Record>(record);
                     if (num == 1)
                     {
-                        Debug.Info("添加Record：" + request_record.ID + "成功");
+                        Debug.Info(string.Format("[客户端id：{0},挖机号{1}]-->添加Record:{2}成功", client.CustomerID, client.code, request_record.ID));
                     }
                     else
                     {
-                        Debug.Info("添加Record：" + request_record.ID + "失败");
+                        Debug.Info(string.Format("[客户端id：{0},挖机号{1}]-->添加Record:{2}失败", client.CustomerID, client.code, request_record.ID));
                     }
                     #endregion
                 }

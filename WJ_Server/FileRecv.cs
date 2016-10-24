@@ -12,7 +12,7 @@ public class FileRecv
     public string localpath;
     public Client client;
     public bool StartWrite = false;
-    public static object all_files_obj;
+    public static object all_files_obj = new object();
     public static Dictionary<string, Client> all_files = new Dictionary<string, Client>();
 
     public FileRecv(Client _client)
@@ -64,7 +64,7 @@ public class FileRecv
                 }
                 StartWrite = true;
                 NetHelp.Send<FileResponse>(11, respinse_file, _stream);
-                Debug.Info("开始上传文件：" + fs.Name);
+                Debug.Info(string.Format("[客户端id：{0},挖机号{1}]--开始上传文件:{2}", client.CustomerID, client.code, fs.Name));
                 break;
             case 12://上传中
                 if (!StartWrite) { return; }
@@ -79,7 +79,7 @@ public class FileRecv
                 if (fs != null)
                 {
                     fs.Close();
-                    Debug.Info("传输完成：" + fs.Name);
+                    Debug.Info(string.Format("[客户端id：{0},挖机号{1}]--传输完成:{2}", client.CustomerID, client.code, fs.Name));
                     fs = null;
                 }
 
@@ -100,7 +100,7 @@ public class FileRecv
                 Dos.Model.WJ_Photo model = Db.Context.From<Dos.Model.WJ_Photo>().Where(where).First();
                 if (model != null)
                 {
-                    Debug.Info(string.Format("===WJ_Photo_Submit 已经存在数据：{0}---{1}---{2}",
+                    Debug.Info(string.Format("[客户端id：{0},挖机号{1}]--WJ_Photo_Submit 已经存在数据:{2}---{3}---{4}", client.CustomerID, client.code, 
                         request_over.CustomerID, request_over.WJID, request_over.PhotoID));
                 }
                 else
@@ -134,7 +134,7 @@ public class FileRecv
 
     public void Exit()
     {
-        if (string.IsNullOrEmpty(localpath))
+        if (!string.IsNullOrEmpty(localpath))
         {
             lock (all_files_obj)
             {

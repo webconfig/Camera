@@ -64,13 +64,13 @@ public class Client
         }
         catch
         {
-            Debug.Error("接收数据错误，然后退出");
+            Debug.Error(string.Format("[客户端id：{0},挖机号{1}]-->接收数据错误，然后退出", CustomerID, code));
             close();
             return;
         }
         if (length == 0)
         {
-            Debug.Error("接收数据长度：" + length);
+            Debug.Error(string.Format("[客户端id：{0},挖机号{1}]-->接收数据长度{2}", CustomerID, code, length));
             close();
             return;
         }
@@ -105,7 +105,7 @@ public class Client
                             }
                             catch(Exception ex)
                             {
-                                Debug.Error("重大bug--->:" + ex.ToString());
+                                Debug.Error(string.Format("[客户端id：{0},挖机号{1}]--传输数据重大bug-->:{2}", CustomerID, code, ex.ToString()));
                                 close();
                                 return;
                             }
@@ -118,7 +118,7 @@ public class Client
                             }
                             catch(Exception ex)
                             {
-                                Debug.Error("重大bug--->:" + ex.ToString());
+                                Debug.Error(string.Format("[客户端id：{0},挖机号{1}]--传输图片重大bug-->:{2}", CustomerID, code, ex.ToString()));
                                 close();
                                 return;
                             }
