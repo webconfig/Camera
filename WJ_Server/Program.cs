@@ -9,7 +9,7 @@ namespace WJ_Server
         //public static Wj_Code Current;
         static void Main()
         {
-            Console.Title = "WJ Server";
+            Console.Title = "WJ Server--"+DateTime.Now.ToString();
             TimeManager.GetInstance();
             ClientManager.GetInstance();
             NetworkFactory.GetInstance();

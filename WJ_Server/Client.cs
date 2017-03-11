@@ -143,23 +143,27 @@ public class Client
     {
         if (State != -1)
         {
-            Debug.Info("【Client】--被动关闭");
-            State = -1;
-            if (FileServer != null)
-            {
-                FileServer.Exit();
-                FileServer = null;
-            }
-            if (DataServer != null)
-            {
-                DataServer = null;
-            }
-            if (_stream != null)
-            {
-                this._stream.Dispose();
-                this._stream = null;
-            }
+            close_self();
             ClientManager.GetInstance().RemoveClient(this);
+        }
+    }
+    public void close_self()
+    {
+        Debug.Info("【Client】--被动关闭");
+        State = -1;
+        if (FileServer != null)
+        {
+            FileServer.Exit();
+            FileServer = null;
+        }
+        if (DataServer != null)
+        {
+            DataServer = null;
+        }
+        if (_stream != null)
+        {
+            this._stream.Dispose();
+            this._stream = null;
         }
     }
 }

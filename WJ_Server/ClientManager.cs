@@ -52,7 +52,7 @@ internal class ClientManager
                 if(item.CustomerID == CustomerID && item.pwd == Password && item.code == code)
                 {
                     Debug.Info(string.Format("[客户端id：{0},挖机号{1}]-->【ClientManager】--删除以前的客户端", item.CustomerID, item.code));
-                    item.close();
+                    item.close_self();
                     Clients.RemoveAt(i);
                     i--;
                 }
